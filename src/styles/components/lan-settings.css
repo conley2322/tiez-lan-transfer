@@ -206,6 +206,27 @@ html.window-settings #root {
   font-size: var(--font-size-xs);
 }
 
+/* 右键菜单 — the device names currently written into the registry, read back
+   from it, so this row is the menu as Explorer will draw it. */
+.lan-menu-entries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin: 8px 0 0;
+}
+
+.lan-menu-entries-title {
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.lan-menu-entries-empty {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
 /* ── controls ───────────────────────────────────────────────── */
 
 .lan-switch {

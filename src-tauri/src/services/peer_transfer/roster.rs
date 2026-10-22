@@ -193,6 +193,12 @@ pub fn notify_peers_changed(app: &AppHandle) {
     // star added in 设置 is a new row in the corner, and removing a machine is
     // one fewer place to drop a file.
     crate::app::corner_box::roster_changed(app);
+    // On Windows the same roster is a right-click menu, and the only way it
+    // stays true to the list on this screen is to be rewritten with it.
+    #[cfg(windows)]
+    if let Err(error) = crate::services::peer_transfer::win_menu::sync(app) {
+        eprintln!(">>> [WINMENU] {error}");
+    }
 }
 
 #[cfg(test)]

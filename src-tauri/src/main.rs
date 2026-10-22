@@ -130,6 +130,12 @@ fn main() -> AppResult<()> {
             if args.iter().any(|arg| arg == "--minimized" || arg == "--autostart") {
                 return;
             }
+            // A right-click send is not a request to look at a window: the files
+            // leave from the instance that is already running.
+            #[cfg(target_os = "windows")]
+            if crate::services::peer_transfer::win_menu::handle_args(app, &args) {
+                return;
+            }
             // Off the callback thread: on Windows it runs inside the second
             // process's WM_COPYDATA SendMessage, and building a WebView there
             // keeps that process waiting.
@@ -343,6 +349,8 @@ fn main() -> AppResult<()> {
             services::peer_transfer::history::clear_peer_transfers,
             services::peer_transfer::receive::list_receive_requests,
             services::peer_transfer::receive::respond_receive_request,
+            app::commands::get_win_menu_state,
+            app::commands::set_win_menu_enabled,
             services::paste_queue::get_paste_queue,
             services::paste_queue::set_paste_queue,
             services::paste_queue::paste_next_step,

@@ -17,6 +17,8 @@ pub mod pairing;
 pub mod receive;
 pub mod roster;
 pub mod selfcheck;
+#[cfg(windows)]
+pub mod win_menu;
 
 pub use models::*;
 

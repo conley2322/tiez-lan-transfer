@@ -128,7 +128,6 @@ const zh = {
     corner_opacity_hint: "只影响底色，文字和描边始终保持可读。",
     corner_fav: "仅显示收藏的用户",
     corner_fav_hint: "关掉后列出所有已配对且可发送的机器（最多 8 台）。",
-    corner_mac_only: "角落框只有 Mac 版有。Windows 上用右键菜单发送，见「右键菜单」。",
 
     // ── 右键菜单 ─────────────────────────────────────────────
     menu_title: "右键菜单",
@@ -138,7 +137,17 @@ const zh = {
     menu_mac_use: "在打包前，Mac 端一律用角落拖拽框发送。",
     menu_win_head: "Windows：右键子菜单",
     menu_win_body:
-        "Windows 版把「TieZ › 用户名列表」写进当前用户的注册表（HKCU\\…\\Shell），不需要管理员权限，也不需要 COM 组件。本版本尚未包含 Windows 端，请先在 Mac 上使用。",
+        "「发送给 → 用户名」来自当前用户的注册表（HKCU\\Software\\Classes）：不要管理员权限，也不装 COM 组件。已配对的设备按名字出现在二级菜单里；在「设备与用户」配对、改名或删除设备后，菜单会按现在的名单重建。",
+    menu_win_toggle: "在资源管理器里显示右键菜单",
+    menu_win_toggle_hint: "关掉会删掉注册表里的菜单项；重新打开按当前设备列表写回去。",
+    menu_win_entries: "现在菜单里",
+    menu_win_entries_empty: "菜单里还没有设备：先到「设备与用户」配对一台。",
+    menu_win_exe: "菜单指向的程序：{path}",
+    menu_win_more: "Windows 11 把它收在「显示更多选项」里：右键后再点「显示更多选项」，或按住 Shift 右键。",
+    menu_win_admin:
+        "不要用「以管理员身份运行」启动 TieZ：Windows 不允许普通程序把文件路径交给管理员权限的窗口，那样右键发送不会有任何反应。",
+    menu_win_failed: "写入注册表失败：{reason}",
+    menu_win_on_mac: "这一项只在 Windows 版有效；Mac 的发送入口是角落拖拽框。",
     menu_goto_corner: "打开角落拖拽框设置",
 
     // ── 传输记录 ─────────────────────────────────────────────
@@ -317,7 +326,6 @@ const en: Record<keyof typeof zh, string> = {
     corner_opacity_hint: "Affects the fill only — text and border always stay readable.",
     corner_fav: "Favorite users only",
     corner_fav_hint: "Off lists every sendable machine (up to 8).",
-    corner_mac_only: "The corner box exists on Mac only. Windows sends from the right-click menu — see “Context Menu”.",
 
     menu_title: "Context Menu",
     menu_mac_head: "macOS: right-click needs a FinderSync extension",
@@ -326,7 +334,18 @@ const en: Record<keyof typeof zh, string> = {
     menu_mac_use: "Until then, send from the Mac corner drop box.",
     menu_win_head: "Windows: right-click submenu",
     menu_win_body:
-        "The Windows build writes “TieZ › names” into the current user's registry (HKCU\\…\\Shell) — no admin rights, no COM component. This version does not ship the Windows side yet; use the Mac app for now.",
+        "“Send to → name” comes from the current user's registry (HKCU\\Software\\Classes): no administrator rights, no COM component. Paired machines appear in the submenu by name, and the list is rebuilt whenever you pair, rename or remove one under “Devices”.",
+    menu_win_toggle: "Show the right-click menu in Explorer",
+    menu_win_toggle_hint: "Off deletes the registry entries; on writes them again from the current device list.",
+    menu_win_entries: "In the menu now",
+    menu_win_entries_empty: "Nothing in the menu yet — pair a machine under “Devices” first.",
+    menu_win_exe: "The menu runs: {path}",
+    menu_win_more:
+        "On Windows 11 it lives under “Show more options”: right-click, then choose it, or hold Shift while right-clicking.",
+    menu_win_admin:
+        "Do not start TieZ with “Run as administrator”: Windows will not let a normal process hand a file path to an elevated window, and the right-click send would do nothing.",
+    menu_win_failed: "Could not write the registry: {reason}",
+    menu_win_on_mac: "This applies to the Windows build only; on Mac the corner drop box is how files leave.",
     menu_goto_corner: "Open corner drop box settings",
 
     history_title: "Transfer Log",
@@ -502,7 +521,6 @@ const tw: Record<keyof typeof zh, string> = {
     corner_opacity_hint: "只影響底色，文字與描邊始終保持可讀。",
     corner_fav: "僅顯示收藏的使用者",
     corner_fav_hint: "關閉後列出所有已配對且可傳送的機器（最多 8 台）。",
-    corner_mac_only: "角落框只有 Mac 版有。Windows 請用右鍵選單傳送，見「右鍵選單」。",
 
     menu_title: "右鍵選單",
     menu_mac_head: "macOS：右鍵傳送需要 FinderSync 擴充",
@@ -511,7 +529,18 @@ const tw: Record<keyof typeof zh, string> = {
     menu_mac_use: "在打包前，Mac 端一律用角落拖曳框傳送。",
     menu_win_head: "Windows：右鍵子選單",
     menu_win_body:
-        "Windows 版把「TieZ › 使用者名稱」寫進目前使用者的登錄（HKCU\\…\\Shell），不需要管理員權限，也不需要 COM 元件。本版本尚未包含 Windows 端，請先在 Mac 上使用。",
+        "「傳送至 → 使用者名稱」來自目前使用者的登錄（HKCU\\Software\\Classes）：不需要管理員權限，也不裝 COM 元件。已配對的裝置依名稱出現在二級選單裡；在「裝置與使用者」配對、改名或移除裝置後，選單會依現在的名單重建。",
+    menu_win_toggle: "在檔案總管顯示右鍵選單",
+    menu_win_toggle_hint: "關閉會刪除登錄裡的選單項；重新開啟會依目前裝置清單寫回。",
+    menu_win_entries: "現在選單裡",
+    menu_win_entries_empty: "選單裡還沒有裝置：先到「裝置與使用者」配對一台。",
+    menu_win_exe: "選單指向的程式：{path}",
+    menu_win_more:
+        "Windows 11 把它收在「顯示更多選項」裡：右鍵後再選「顯示更多選項」，或按住 Shift 右鍵。",
+    menu_win_admin:
+        "不要用「以管理員身分執行」啟動 TieZ：Windows 不允許普通程式把檔案路徑交給管理員權限的視窗，那樣右鍵傳送不會有任何反應。",
+    menu_win_failed: "寫入登錄失敗：{reason}",
+    menu_win_on_mac: "這一項只在 Windows 版有效；Mac 的傳送入口是角落拖曳框。",
     menu_goto_corner: "開啟角落拖曳框設定",
 
     history_title: "傳輸記錄",

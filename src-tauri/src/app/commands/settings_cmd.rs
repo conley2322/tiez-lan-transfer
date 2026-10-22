@@ -227,10 +227,17 @@ pub fn save_setting(
         _ => {}
     }
 
-    db_state
-        .settings_repo
-        .set(&key, &value)
-        .map_err(AppError::from)
+    let saved = db_state.settings_repo.set(&key, &value);
+    // The Windows submenu title is one of these two strings, and the rows are
+    // written from the roster: a language change has to rewrite the menu before
+    // the next right-click, or the label stays in the old language.
+    #[cfg(target_os = "windows")]
+    if key == "app.language" {
+        if let Some(app) = crate::GLOBAL_APP_HANDLE.get() {
+            let _ = crate::services::peer_transfer::win_menu::sync(app);
+        }
+    }
+    saved.map_err(AppError::from)
 }
 
 #[tauri::command]

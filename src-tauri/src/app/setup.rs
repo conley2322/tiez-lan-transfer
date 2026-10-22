@@ -103,6 +103,10 @@ pub fn init(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(target_os = "windows")]
     {
+        // The Explorer submenu is this platform's send entry point, so it is
+        // written before the user's first right-click — and if this very start
+        // came *from* a right-click, those files go out now.
+        crate::services::peer_transfer::win_menu::startup(&app_handle);
         crate::infrastructure::windows_api::drag_drop::register_emoji_drag_drop(app_handle.clone());
         init_win32_hooks(app);
         setup_taskbar_listener(app);

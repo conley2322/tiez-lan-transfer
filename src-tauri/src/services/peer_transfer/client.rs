@@ -698,6 +698,18 @@ pub fn send_files_to_peers(
     paths: Vec<String>,
     batch_name: Option<String>,
 ) -> Result<String, String> {
+    send(&app_handle, peer_ids, paths, batch_name)
+}
+
+/// The same call without a window in front of it. The Windows right-click menu
+/// reaches the app as process arguments, and those have to pass the very same
+/// checks a drop does — nothing gets to skip the path or peer-count rules.
+pub fn send(
+    app: &AppHandle,
+    peer_ids: Vec<String>,
+    paths: Vec<String>,
+    batch_name: Option<String>,
+) -> Result<String, String> {
     let peer_ids: Vec<String> = peer_ids
         .into_iter()
         .map(|id| id.trim().to_string())
@@ -738,7 +750,7 @@ pub fn send_files_to_peers(
         file_paths: paths,
         batch_name,
     };
-    start(&app_handle, job)
+    start(app, job)
 }
 
 /// "重试" in the progress box: replay a group that failed.

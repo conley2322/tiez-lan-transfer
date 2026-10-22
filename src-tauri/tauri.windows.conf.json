@@ -1,6 +1,7 @@
 {
   "identifier": "com.tiez.app",
   "bundle": {
+    "createUpdaterArtifacts": false,
     "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",

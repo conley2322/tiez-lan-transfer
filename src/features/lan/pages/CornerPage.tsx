@@ -11,7 +11,7 @@ import type { SettingsCtx } from "../LanSettingsWindow";
 
 type Side = "top-right" | "top-left";
 
-export default function CornerPage({ ctx, isMac }: { ctx: SettingsCtx; isMac: boolean }) {
+export default function CornerPage({ ctx }: { ctx: SettingsCtx }) {
     const { t, corner, refreshCorner } = ctx;
 
     const enabled = corner?.enabled ?? true;
@@ -26,7 +26,6 @@ export default function CornerPage({ ctx, isMac }: { ctx: SettingsCtx; isMac: bo
     return (
         <>
             <h2 className="lan-page-title">{t("corner_title")}</h2>
-            {!isMac ? <p className="lan-page-note">{t("corner_mac_only")}</p> : null}
 
             <LanCard>
                 <LanRow label={t("corner_enable")} hint={t("corner_enable_hint")}>

@@ -14,6 +14,7 @@ pub mod theme_cmd;
 pub mod thumbnail_cmd;
 pub mod ui_cmd;
 pub mod update_cmd;
+pub mod win_menu_cmd;
 
 // Re-export all commands for convenience in main.rs if needed,
 // though tauri usually expects them to be referenced via module path in generate_handler!
@@ -30,3 +31,4 @@ pub use theme_cmd::*;
 pub use thumbnail_cmd::*;
 pub use ui_cmd::*;
 pub use update_cmd::*;
+pub use win_menu_cmd::*;

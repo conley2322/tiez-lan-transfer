@@ -53,10 +53,24 @@ const TAB_ALIASES: Record<string, LanTab> = {
     about: "about",
 };
 
-const readInitialTab = (): LanTab => {
-    const query = new URLSearchParams(window.location.search).get("tab") ?? "";
-    return TAB_ALIASES[query] ?? "general";
+const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/**
+ * Tabs that exist on this machine. The corner box window is only ever created on
+ * macOS (`setup.rs` gates it), so on Windows those four switches would write
+ * settings nothing reads — a switch that looks alive and does nothing.
+ */
+const VISIBLE_TABS = TABS.filter((item) => item.id !== "corner" || isMacPlatform);
+
+/** Both entry points (`?tab=` and the `settings-tab` event) name a tab that may
+ *  not exist on this machine; fall back rather than render an empty pane. */
+const resolveTab = (query: string): LanTab => {
+    const tab = TAB_ALIASES[query] ?? "general";
+    return VISIBLE_TABS.some((item) => item.id === tab) ? tab : "general";
 };
+
+const readInitialTab = (): LanTab =>
+    resolveTab(new URLSearchParams(window.location.search).get("tab") ?? "");
 
 export type SettingsCtx = {
     t: LanT;
@@ -73,8 +87,6 @@ export type SettingsCtx = {
     refreshFloat: () => void;
     go: (tab: LanTab) => void;
 };
-
-const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 export default function LanSettingsWindow() {
     const [tab, setTab] = useState<LanTab>(readInitialTab);
@@ -150,7 +162,7 @@ export default function LanSettingsWindow() {
         let cancelled = false;
         (async () => {
             const stop = await listen<string>("settings-tab", (event) => {
-                setTab(TAB_ALIASES[event.payload] ?? "general");
+                setTab(resolveTab(event.payload));
             });
             if (cancelled) stop();
             else unlisten = stop;
@@ -199,7 +211,7 @@ export default function LanSettingsWindow() {
         <div className="lan-settings">
             <nav className="lan-side" aria-label={t("nav_group")}>
                 <div className="lan-side-group">{t("nav_group")}</div>
-                {TABS.map((item) => {
+                {VISIBLE_TABS.map((item) => {
                     const Icon = item.icon;
                     const active = item.id === tab;
                     return (
@@ -220,7 +232,7 @@ export default function LanSettingsWindow() {
                 {tab === "general" ? <GeneralPage ctx={ctx} /> : null}
                 {tab === "devices" ? <DevicesPage ctx={ctx} /> : null}
                 {tab === "transfer" ? <TransferPage ctx={ctx} /> : null}
-                {tab === "corner" ? <CornerPage ctx={ctx} isMac={isMacPlatform} /> : null}
+                {tab === "corner" ? <CornerPage ctx={ctx} /> : null}
                 {tab === "menu" ? <MenuPage ctx={ctx} isMac={isMacPlatform} /> : null}
                 {tab === "history" ? <HistoryPage ctx={ctx} /> : null}
                 {tab === "about" ? <AboutPage ctx={ctx} isMac={isMacPlatform} /> : null}

@@ -107,6 +107,15 @@ export type CornerState = {
     favoritesOnly: boolean;
 };
 
+/** What Rust actually wrote into HKCU for the right-click submenu. `entries` is
+ *  read back from the registry, so the page shows the menu Explorer will show —
+ *  not the roster the page hopes the registry was rebuilt from. */
+export type WinMenuState = {
+    enabled: boolean;
+    entries: string[];
+    exePath: string;
+};
+
 export type FloatState = {
     position: string;
     holdSeconds: number;
@@ -194,6 +203,10 @@ export const setCornerOpacity = (opacity: number) =>
     invoke<void>("set_corner_box_opacity", { opacity });
 export const setCornerFavoritesOnly = (favoritesOnly: boolean) =>
     invoke<void>("set_corner_box_favorites_only", { favoritesOnly });
+
+export const getWinMenuState = () => invoke<WinMenuState>("get_win_menu_state");
+export const setWinMenuEnabled = (enabled: boolean) =>
+    invoke<void>("set_win_menu_enabled", { enabled });
 
 export const getFloatState = () => invoke<FloatState>("get_peer_float_state");
 export const hideFloat = (label: string) => invoke<void>("hide_peer_float", { label });
