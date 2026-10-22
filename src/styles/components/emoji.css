@@ -1,0 +1,314 @@
+/* Emoji Panel - Simplified Premium */
+.emoji-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 12px 12px 12px;
+  background: transparent;
+  position: relative;
+}
+
+/* Tabs - Minimalist */
+.emoji-tabs {
+  display: flex;
+  background: var(--emoji-tabs-background);
+  padding: 4px;
+  border-radius: var(--emoji-tabs-radius);
+  border: var(--emoji-tabs-border);
+  box-shadow: var(--emoji-tabs-shadow);
+  position: relative;
+  z-index: 10;
+}
+
+.emoji-tab {
+  flex: 1;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  border-radius: var(--emoji-tab-radius);
+  transition: all var(--duration-base) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-tab-text {
+  position: relative;
+  z-index: 2;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: color var(--duration-base) ease;
+}
+
+.emoji-tab.active .emoji-tab-text {
+  color: var(--emoji-active-color);
+}
+
+.active-tab-indicator {
+  position: absolute;
+  inset: 0;
+  background: var(--emoji-active-background);
+  border-radius: var(--emoji-tab-radius);
+  z-index: 1;
+  border: var(--emoji-tabs-border);
+  box-shadow: var(--emoji-active-shadow);
+}
+
+/* Content Area */
+.emoji-content-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.emoji-content,
+.emoji-fav-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+/* Scrollbar */
+html.platform-macos .emoji-content::-webkit-scrollbar,
+html.platform-macos .emoji-fav-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Emoji Grid */
+.emoji-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emoji-group-title {
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  padding-left: 4px;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 6px;
+}
+
+.emoji-btn {
+  height: 36px;
+  width: 100%;
+  background: var(--emoji-button-background);
+  border: var(--emoji-button-border);
+  border-radius: var(--emoji-button-radius);
+  box-shadow: var(--emoji-button-shadow);
+  font-size: var(--font-size-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.emoji-btn:hover {
+  background: var(--bg-input);
+  border-color: var(--button-hover-border-color);
+  box-shadow: var(--button-hover-shadow);
+  transform: var(--button-hover-transform);
+}
+
+/* Favorites Grid - Clean Grid */
+.emoji-fav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px;
+  padding: 2px;
+  flex: 0 0 auto;
+}
+
+/* Hint / tip sits below the add card — never overlays it. */
+.emoji-fav-footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 4px 12px 8px;
+  margin-top: 4px;
+}
+
+.emoji-fav-hint,
+.emoji-fav-tip {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 28ch;
+}
+
+.emoji-fav-hint {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+.emoji-fav-card {
+  aspect-ratio: 1;
+  position: relative;
+  background: var(--emoji-card-background);
+  border: var(--emoji-card-border);
+  border-radius: var(--emoji-card-radius);
+  box-shadow: var(--emoji-card-shadow);
+  padding: 6px;
+  transition: all var(--duration-base) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-fav-card:hover {
+  border-color: var(--card-hover-border-color);
+  background: var(--bg-input);
+  box-shadow: var(--card-hover-shadow);
+  transform: var(--card-hover-transform);
+}
+
+.emoji-fav-preview {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--button-radius);
+}
+
+.emoji-fav-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Remove button - Clean */
+.emoji-fav-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: var(--bg-button);
+  color: var(--text-primary);
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--button-border);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--duration-base) ease;
+  z-index: 10;
+}
+
+.emoji-fav-card:hover .emoji-fav-remove,
+.emoji-fav-card[data-delete-visible="true"] .emoji-fav-remove {
+  opacity: 1;
+}
+
+.emoji-fav-remove:hover {
+  background: var(--status-danger);
+  color: var(--on-accent);
+  border-color: var(--status-danger);
+}
+
+/* Add Button Card - Ultra Minimalist */
+.emoji-fav-add {
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  cursor: pointer;
+}
+
+.emoji-fav-add-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+}
+
+.add-icon-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-fav-add:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.emoji-fav-add:hover .emoji-fav-add-btn {
+  color: var(--accent-color);
+}
+
+/* Drop Overlay - Ultra Minimalist */
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(var(--accent-color-rgb), 0.12);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--accent-color);
+  border-radius: var(--panel-radius);
+  margin: 4px;
+  pointer-events: none;
+}
+
+.drop-overlay p {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--accent-color);
+  background: var(--bg-panel);
+  padding: 8px 16px;
+  border-radius: var(--button-radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line-soft);
+}
+
+.emoji-tab:focus-visible,
+.emoji-btn:focus-visible,
+.emoji-fav-preview:focus-visible,
+.emoji-fav-remove:focus-visible,
+.emoji-fav-add-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emoji-tab,
+  .emoji-btn,
+  .emoji-fav-card,
+  .emoji-fav-remove {
+    transition: none;
+  }
+}

@@ -1,0 +1,76 @@
+/* Shared geometry follows the established macOS layout for every platform and theme. */
+html:root .brand-mark {
+  height: 16px;
+  width: 46px;
+  margin-left: 6px;
+}
+
+html:root .header-title.page-header-title.is-page-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html:root .settings-view .quick-paste-select {
+  width: var(--st-field-width-sm);
+  flex: 0 1 var(--st-field-width-sm);
+}
+
+html:root .settings-view {
+  --settings-inline-pad: 14px;
+  padding: 12px 12px 16px;
+  scrollbar-gutter: auto;
+  line-height: 1.4;
+}
+
+/* Font-dependent `normal` line heights otherwise change control geometry
+   between system fonts even when padding and font size are identical. */
+html:root .settings-view button {
+  line-height: 1.4;
+}
+
+html:root .settings-group h3 {
+  line-height: 20px;
+}
+
+html:root .settings-group {
+  margin: 6px 0;
+  border-radius: var(--radius-lg);
+}
+
+html:root .settings-group.collapsed .group-header,
+html:root .settings-group:not(.collapsed) .group-header {
+  padding: 12px 16px;
+}
+
+html:root .settings-group:not(.collapsed) .group-content {
+  padding: 12px 16px 16px;
+}
+
+html:root .setting-item {
+  gap: var(--st-space-2) var(--st-space-4);
+  padding-block: var(--st-row-pad-y);
+  min-height: var(--st-row-min-height);
+}
+
+html:root .setting-item.is-child {
+  min-height: 44px;
+}
+
+html:root .setting-item.column {
+  gap: var(--st-space-2);
+  padding-block: var(--st-space-3);
+}
+
+@media (max-width: 360px) {
+  html:root .settings-view {
+    padding-inline: 10px;
+  }
+
+  html:root .settings-group.collapsed .group-header,
+  html:root .settings-group:not(.collapsed) .group-header,
+  html:root .settings-group:not(.collapsed) .group-content {
+    padding-inline: 12px;
+  }
+}
+

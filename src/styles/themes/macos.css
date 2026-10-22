@@ -1,0 +1,310 @@
+/* macOS system theme — vibrancy, hairlines, SF/PingFang, list not cards. */
+
+:root.theme-macos,
+body.theme-macos {
+  background-color: transparent;
+  color-scheme: light;
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+
+  --bg-window: #f6f6f6;
+  --bg-content: transparent;
+  --bg-toolbar: #f6f6f6;
+  --bg-panel: #ffffff;
+  --bg-input: #ffffff;
+  --bg-element: transparent;
+  --bg-button: rgba(0, 0, 0, 0.05);
+
+  --text-primary: #1d1d1f;
+  --text-secondary: #636368;
+  --text-muted: #6f6f73;
+
+  --accent-color: #007aff;
+  --accent-color-rgb: 0, 122, 255;
+  --accent-hover: #0066d6;
+
+  --line-soft: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.14);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.16);
+  --shadow-inset: inset 0 0.5px 0 rgba(255, 255, 255, 0.7);
+
+  --shell-background: var(--bg-window);
+  --shell-border: 1px solid rgba(0, 0, 0, 0.08);
+  --shell-shadow: 0 18px 50px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --shell-radius: 12px;
+  --shell-backdrop-filter: none;
+
+  --toolbar-border: 1px solid rgba(0, 0, 0, 0.06);
+
+  --input-border: 1px solid rgba(0, 0, 0, 0.1);
+  --input-radius: 8px;
+  --input-shadow: none;
+  --input-focus-shadow: 0 0 0 3px rgba(0, 122, 255, 0.28);
+
+  --button-border: 1px solid rgba(0, 0, 0, 0.1);
+  --button-radius: 7px;
+  --button-shadow: none;
+  --button-hover-shadow: none;
+  --button-active-shadow: none;
+  --button-active-filled-shadow: none;
+  --keycap-shadow: none;
+  --keycap-active-shadow: none;
+  --segmented-shadow: none;
+  --segment-active-shadow: none;
+  --dialog-button-shadow: none;
+  --dialog-button-hover-shadow: none;
+  --dialog-button-active-shadow: none;
+  --compact-action-backdrop-filter: none;
+  --popover-background: rgba(255, 255, 255, 0.94);
+  --modal-background: rgba(255, 255, 255, 0.96);
+  --toast-background: rgba(255, 255, 255, 0.94);
+  --menu-background: rgba(255, 255, 255, 0.94);
+  --popover-backdrop-filter: blur(28px) saturate(190%);
+
+  --card-border: 1px solid rgba(0, 0, 0, 0.1);
+  --card-radius: 8px;
+  --card-shadow: none;
+  --card-hover-shadow: none;
+  --card-hover-transform: none;
+  --card-hover-border-color: rgba(0, 0, 0, 0.16);
+  --card-selected-background: rgba(0, 0, 0, 0.04);
+  --card-selected-border-color: var(--accent-color);
+  --card-selected-shadow: none;
+  --card-selected-outline: 2px solid var(--card-selected-border-color);
+
+  --panel-border: 1px solid rgba(0, 0, 0, 0.08);
+  --panel-radius: 10px;
+  --panel-shadow: none;
+  --panel-divider-color: rgba(0, 0, 0, 0.08);
+
+  --data-panel-border: 1px solid rgba(0, 0, 0, 0.08);
+  --data-panel-shadow: none;
+
+  --menu-border: 1px solid rgba(0, 0, 0, 0.08);
+  --menu-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+
+  --scrollbar-size: 9px;
+  --scrollbar-size-thin: 6px;
+  --scrollbar-radius: 999px;
+  --scrollbar-thumb-color: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.38);
+  --scrollbar-thumb-border: 2px solid transparent;
+
+
+
+  --layout-item-background: rgba(255, 255, 255, 0.75);
+  --layout-item-divider: none;
+  --layout-item-margin-x: 8px;
+  --layout-item-margin-bottom: 6px;
+  /* The shared meta toolbar is optically lifted by 6px. Keep the same
+     top breathing room as the default theme so its controls do not hug
+     the card edge. */
+  --layout-item-padding: 10px 12px 5px;
+  --layout-search-input-padding: 8px 12px 8px 34px;
+}
+
+html.platform-macos body.theme-macos,
+html.platform-macos.theme-macos {
+  --bg-window: #f6f6f6;
+  --shell-background: var(--bg-window);
+  --shell-backdrop-filter: none;
+  --shell-border: 0.5px solid rgba(0, 0, 0, 0.12);
+}
+
+body.theme-macos {
+  position: relative;
+  isolation: isolate;
+}
+
+body.theme-macos::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background-image: var(--custom-bg-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  opacity: 0.18;
+  pointer-events: none;
+  border-radius: calc(var(--shell-radius) + 1px);
+}
+
+body.has-custom-bg.theme-macos::before {
+  background-image: none;
+  opacity: 0;
+}
+
+body.has-custom-bg.theme-macos #root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--custom-bg-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--custom-bg-opacity, 0.45);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+body.theme-macos:not(.has-custom-bg)::before {
+  background-image: none;
+  opacity: 0;
+}
+
+body.theme-macos #root {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  isolation: isolate;
+  background-clip: padding-box;
+}
+
+body.theme-macos #root > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root.theme-macos:not(.light-mode),
+  body.theme-macos:not(.light-mode) {
+    color-scheme: dark;
+    --bg-window: #1e1e1e;
+    --bg-toolbar: #1e1e1e;
+    --bg-panel: #282828;
+    --bg-input: rgba(255, 255, 255, 0.08);
+    --bg-element: transparent;
+    --bg-button: rgba(255, 255, 255, 0.06);
+
+    --text-primary: #f5f5f7;
+    --text-secondary: #a7a7ac;
+    --text-muted: #a1a1a6;
+
+    --accent-color: #0a84ff;
+    --accent-color-rgb: 10, 132, 255;
+    --accent-hover: #409cff;
+
+    --line-soft: rgba(255, 255, 255, 0.1);
+    --line-strong: rgba(255, 255, 255, 0.16);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.36);
+    --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.42);
+    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+    --shadow-inset: inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+
+    --shell-background: var(--bg-window);
+    --shell-border: 1px solid rgba(255, 255, 255, 0.1);
+    --shell-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    --shell-backdrop-filter: none;
+    --toolbar-border: 1px solid rgba(255, 255, 255, 0.08);
+    --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+    --panel-divider-color: rgba(255, 255, 255, 0.1);
+    --data-panel-border: 1px solid rgba(255, 255, 255, 0.1);
+    --data-panel-hover-background: #323232;
+    --menu-border: 1px solid rgba(255, 255, 255, 0.1);
+    --input-border: 1px solid rgba(255, 255, 255, 0.12);
+    --button-border: 1px solid rgba(255, 255, 255, 0.12);
+    --card-border: 1px solid rgba(255, 255, 255, 0.12);
+    --card-hover-border-color: rgba(255, 255, 255, 0.2);
+    --card-selected-background: rgba(255, 255, 255, 0.08);
+    --card-selected-border-color: var(--accent-color);
+    --layout-item-background: rgba(255, 255, 255, 0.06);
+    --scrollbar-thumb-color: rgba(255, 255, 255, 0.28);
+    --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.42);
+
+    --popover-background: rgba(44, 44, 46, 0.94);
+    --modal-background: rgba(40, 40, 42, 0.96);
+    --toast-background: rgba(44, 44, 46, 0.94);
+    --menu-background: rgba(44, 44, 46, 0.94);
+    --popover-backdrop-filter: blur(28px) saturate(190%);
+  }
+
+  html.platform-macos body.theme-macos:not(.light-mode),
+  html.platform-macos.theme-macos:not(.light-mode) {
+    --bg-window: #1e1e1e;
+    --shell-background: var(--bg-window);
+    --shell-backdrop-filter: none;
+  }
+}
+
+:root.dark-mode.theme-macos,
+body.dark-mode.theme-macos {
+  color-scheme: dark;
+  --bg-window: #1e1e1e;
+  --bg-toolbar: #1e1e1e;
+  --bg-panel: #282828;
+  --bg-input: rgba(255, 255, 255, 0.08);
+  --bg-element: transparent;
+  --bg-button: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #f5f5f7;
+  --text-secondary: #a7a7ac;
+  --text-muted: #a1a1a6;
+
+  --accent-color: #0a84ff;
+  --accent-color-rgb: 10, 132, 255;
+  --accent-hover: #409cff;
+
+  --line-soft: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.5);
+  --shadow-inset: inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+
+  --shell-background: var(--bg-window);
+  --shell-border: 1px solid rgba(255, 255, 255, 0.1);
+  --shell-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --shell-backdrop-filter: none;
+  --toolbar-border: 1px solid rgba(255, 255, 255, 0.08);
+  --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+  --panel-divider-color: rgba(255, 255, 255, 0.1);
+  --data-panel-border: 1px solid rgba(255, 255, 255, 0.1);
+  --data-panel-hover-background: #323232;
+  --menu-border: 1px solid rgba(255, 255, 255, 0.1);
+  --input-border: 1px solid rgba(255, 255, 255, 0.12);
+  --button-border: 1px solid rgba(255, 255, 255, 0.12);
+  --card-border: 1px solid rgba(255, 255, 255, 0.12);
+  --card-hover-border-color: rgba(255, 255, 255, 0.2);
+  --card-selected-background: rgba(255, 255, 255, 0.08);
+  --card-selected-border-color: var(--accent-color);
+  --layout-item-background: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb-color: rgba(255, 255, 255, 0.28);
+  --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.42);
+
+  --popover-background: rgba(44, 44, 46, 0.94);
+  --modal-background: rgba(40, 40, 42, 0.96);
+  --toast-background: rgba(44, 44, 46, 0.94);
+  --menu-background: rgba(44, 44, 46, 0.94);
+  --popover-backdrop-filter: blur(28px) saturate(190%);
+}
+
+html.platform-macos.dark-mode body.theme-macos,
+html.platform-macos body.dark-mode.theme-macos {
+  --bg-window: #1e1e1e;
+  --shell-background: var(--bg-window);
+  --shell-backdrop-filter: none;
+}
+
+body.compact-preview.theme-macos #root,
+body.theme-macos.compact-preview #root,
+body.dark-mode.compact-preview.theme-macos #root {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.theme-macos .history-item:hover:not(.selected, .keyboard-owns-list *, .list-pointer-selects *) {
+  box-shadow: none;
+}
+
+.theme-macos .history-item.selected {
+  box-shadow: none;
+}

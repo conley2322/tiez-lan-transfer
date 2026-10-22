@@ -1,0 +1,284 @@
+/* The three desktop cards (window=progress|pair|receive).
+   Each window is transparent and exactly as large as the card, so the card fills
+   it and nothing here needs a size of its own. Colours are the HUD tokens: these
+   sit over somebody's wallpaper, not over a themed window. */
+
+html.window-float,
+html.window-float body,
+html.window-float #root {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.float-card {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--hud-panel-line);
+  border-radius: var(--radius-lg);
+  background: var(--hud-panel);
+  color: var(--on-hud);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-main);
+  overflow: hidden;
+}
+
+.float-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: none;
+}
+
+.float-title {
+  color: var(--on-hud);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.float-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--on-hud-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.float-close:hover {
+  background: var(--hud-row-hot);
+  color: var(--on-hud);
+}
+
+.float-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── progress ───────────────────────────────────────────────── */
+
+.float-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.float-row-name {
+  color: var(--on-hud);
+  font-size: var(--font-size-2xs);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.float-bar {
+  height: 6px;
+  border: 1px solid var(--hud-bar-line);
+  border-radius: var(--radius-pill);
+  background: var(--hud-bar);
+  overflow: hidden;
+}
+
+.float-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent-color);
+  transition: width var(--duration-fast) linear;
+}
+
+.float-bar-fill.is-done {
+  background: var(--status-success);
+}
+
+.float-bar-fill.is-bad {
+  background: var(--status-danger);
+}
+
+.float-row-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.float-row-size,
+.float-row-state,
+.float-more {
+  color: var(--on-hud-muted);
+  font-size: var(--font-size-2xs);
+}
+
+.float-act {
+  padding: 2px 6px;
+  border: 1px solid var(--hud-panel-line);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--on-hud);
+  font-family: inherit;
+  font-size: var(--font-size-2xs);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease;
+}
+
+.float-act:hover {
+  background: var(--hud-row-hot);
+}
+
+.float-act.is-wide {
+  align-self: flex-start;
+}
+
+/* ── the two cards that ask ─────────────────────────────────── */
+
+.float-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hud-panel-line);
+}
+
+.float-ask:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.float-ask-name {
+  color: var(--on-hud);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.float-ask-meta {
+  color: var(--on-hud-muted);
+  font-size: var(--font-size-2xs);
+  line-height: 1.4;
+}
+
+.float-word {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--on-hud-muted);
+  font-size: var(--font-size-2xs);
+}
+
+.float-word b {
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--hud-row-hot);
+  color: var(--on-hud);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.08em;
+}
+
+.float-word-hint {
+  color: var(--on-hud-muted);
+  font-size: var(--font-size-2xs);
+  line-height: 1.4;
+}
+
+.float-files {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.float-files li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--on-hud);
+  font-size: var(--font-size-2xs);
+  min-width: 0;
+}
+
+.float-files li span {
+  flex: none;
+  color: var(--on-hud-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── slide to accept ────────────────────────────────────────── */
+
+.slide-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--hud-panel-line);
+  border-radius: var(--radius-pill);
+  background: var(--hud-bar);
+  overflow: hidden;
+}
+
+.slide-label {
+  /* past the 40px knob box, so the hint never sits under a finger */
+  padding-left: 48px;
+  color: var(--on-hud-muted);
+  font-size: var(--font-size-2xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slide-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid var(--hud-panel-line);
+  border-radius: var(--radius-pill);
+  background: var(--on-hud);
+  color: var(--hud-panel);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  transition: transform var(--duration-fast) ease;
+}
+
+.slide-knob.is-done {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.slide-track.is-dragging .slide-knob {
+  cursor: grabbing;
+  transition: none;
+}

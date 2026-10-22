@@ -1,0 +1,399 @@
+/* Retro Theme */
+/* Component adjustments for this theme, kept ahead of the theme's own rules
+   (they used to sit in the component stylesheets). */
+
+/* ---- From components/ai.css ---- */
+
+.theme-retro .ai-action-btn {
+  border: 2px solid var(--border-dark);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 0 var(--shadow-color);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.theme-retro .ai-action-btn:hover {
+  box-shadow: 3px 3px 0 0 var(--shadow-color);
+  transform: translate(-1px, -1px);
+}
+
+.theme-retro .ai-action-btn:active {
+  box-shadow: 0 0 0 0 var(--shadow-color);
+  transform: translate(2px, 2px);
+}
+
+/* ---- From components/compact-mode.css ---- */
+
+body.theme-retro .compact-action-menu,
+html.theme-retro .compact-action-menu {
+    background: var(--bg-element);
+    border: 2px solid var(--border-dark);
+    box-shadow: 4px 4px 0 0 var(--shadow-color);
+    border-radius: 0;
+}
+
+body.theme-retro .compact-action-menu-item,
+html.theme-retro .compact-action-menu-item {
+    border-radius: 0;
+}
+
+/* ---- From components/file-transfer.css ---- */
+
+.theme-retro .wt-chat-view {
+  --im-bubble-shadow: 2px 2px 0 var(--line-strong);
+}
+
+:root.theme-retro,
+body.theme-retro {
+  --retro-chip-text: #ffffff;
+  --bg-body: #dcdcdc;
+  --bg-window: #e8e8e8;
+  --bg-content: #dcdcdc;
+  --bg-toolbar: #dcdcdc;
+  --bg-panel: #f3f3f3;
+  --bg-input: #ffffff;
+  --bg-element: #f3f3f3;
+  --bg-button: #e0e0e0;
+
+  --text-primary: #373737;
+  --text-secondary: #545454;
+  --text-muted: #5f5f5f;
+
+  --accent-color: #487bdb;
+  --accent-color-rgb: 72, 123, 219;
+  --accent-hover: #3d69bc;
+  --border-dark: #373737;
+  --shadow-color: #373737;
+
+  --line-soft: #373737;
+  --line-strong: #1f1f1f;
+  --shadow-xs: 2px 2px 0 0 var(--shadow-color);
+  --shadow-sm: 3px 3px 0 0 var(--shadow-color);
+  --shadow-md: 5px 5px 0 0 var(--shadow-color);
+  --shadow-lg: 4px 4px 0 0 var(--shadow-color);
+  --shadow-inset: inset 4px 4px 0 rgba(0, 0, 0, 0.1);
+
+  --font-main: "Courier New", Courier, monospace, sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+
+  --radius-window: 8px;
+  --radius-panel: 4px;
+  --radius-card: 0;
+  --radius-control: 0;
+
+  --shell-background: var(--bg-window);
+  --shell-border: 2px solid var(--border-dark);
+  --shell-shadow: 4px 4px 0 0 var(--shadow-color);
+  --shell-radius: 8px;
+
+  --toolbar-border: 2px solid var(--border-dark);
+
+  --title-background: var(--text-primary);
+  --title-color: var(--bg-window);
+  --title-padding: 4px 8px;
+  --title-transform: uppercase;
+  --title-letter-spacing: 2px;
+  --title-font-size: 16px;
+  --title-font-weight: 900;
+  --title-font-family: var(--font-main);
+
+  --input-border: 3px solid var(--border-dark);
+  --input-radius: 0;
+  --input-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.1);
+  --input-focus-shadow: none;
+  --input-font-weight: 700;
+
+  --button-border: 2px solid var(--border-dark);
+  --button-radius: 0;
+  --button-shadow: 2px 2px 0 0 var(--shadow-color);
+  --button-hover-border-color: var(--border-dark);
+  --button-hover-shadow: 3px 3px 0 0 var(--shadow-color);
+  --button-hover-transform: translate(-1px, -1px);
+  --button-active-shadow: 0 0 0 0 var(--shadow-color);
+  --button-active-transform: translate(2px, 2px);
+  --button-active-filled-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+
+  --card-border: 3px solid var(--border-dark);
+  --card-radius: 0;
+  --compact-card-radius: 0;
+  --compact-media-radius: 0;
+  --card-shadow: none;
+  --card-hover-border-color: var(--border-dark);
+  --card-hover-shadow: 5px 5px 0 0 var(--shadow-color);
+  --card-hover-transform: translate(-1px, -1px);
+  --card-active-shadow: 2px 2px 0 0 var(--shadow-color);
+  --card-active-transform: translate(2px, 2px);
+  --card-selected-background: rgba(var(--accent-color-rgb), 0.1);
+  --card-selected-border-color: var(--accent-color);
+  --card-selected-shadow: 0 0 10px rgba(var(--accent-color-rgb), 0.3), 4px 4px 0 0 var(--shadow-color);
+  --card-selected-outline: 2px solid var(--card-selected-border-color);
+
+  --panel-border: 2px solid var(--border-dark);
+  --panel-radius: 4px;
+  --panel-shadow: 2px 2px 0 0 var(--shadow-color);
+  --panel-header-background: var(--bg-button);
+  --panel-divider-color: rgba(0, 0, 0, 0.05);
+
+  --data-panel-border: 2px solid var(--border-dark);
+  --data-panel-radius: 0;
+  --data-panel-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.05);
+  --data-panel-hover-background: #ffffff;
+
+  --switch-width: 44px;
+  --switch-height: 22px;
+  --range-track-height: 8px;
+  --range-thumb-size: 16px;
+  --range-track-background: rgba(var(--accent-color-rgb), 0.1);
+  --range-track-border: 2px solid var(--border-dark);
+  --range-track-radius: 6px;
+  --range-track-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.08);
+  --range-thumb-border: 2px solid var(--border-dark);
+  --range-thumb-radius: 4px;
+  --range-thumb-shadow: 0 2px 0 var(--border-dark);
+  --range-thumb-active-transform: translateY(1px);
+  --range-thumb-active-shadow: 0 1px 0 var(--border-dark);
+
+  --keycap-border: 2px solid var(--border-dark);
+  --keycap-radius: 4px;
+  --keycap-shadow: none;
+
+  --segmented-border: 2px solid var(--border-dark);
+  --segmented-radius: 4px;
+  --segmented-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.1);
+  --segment-radius: 2px;
+  --segment-active-background: var(--text-primary);
+  --segment-active-color: var(--bg-window);
+  --segment-active-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+
+  --modal-border: 4px solid var(--border-dark);
+  --modal-radius: 0;
+  --modal-shadow: 10px 10px 0 var(--shadow-color);
+  --popover-background: #f3f3f3;
+  --modal-background: #f3f3f3;
+  --toast-background: #f3f3f3;
+  --menu-background: #f3f3f3;
+  --popover-backdrop-filter: none;
+  --modal-title-background: var(--text-primary);
+  --modal-title-color: var(--bg-window);
+  --modal-title-padding: 4px 8px;
+  --modal-title-transform: uppercase;
+  --modal-title-letter-spacing: 0.5px;
+  --modal-title-font-weight: 900;
+  --dialog-button-border: 2px solid var(--border-dark);
+  --dialog-button-radius: 0;
+  --dialog-button-shadow: 3px 3px 0 var(--shadow-color);
+  --dialog-button-hover-shadow: 4px 4px 0 var(--shadow-color);
+  --dialog-button-hover-transform: translate(-1px, -1px);
+  --dialog-button-active-shadow: 1px 1px 0 var(--shadow-color);
+  --dialog-button-active-transform: translate(2px, 2px);
+
+  --tags-border: 3px solid var(--border-dark);
+  --tags-radius: 0;
+  --tags-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.1);
+  --tag-chip-border: 2px solid var(--border-dark);
+  --tag-chip-radius: 0;
+  --tag-chip-shadow: 2px 2px 0 0 var(--shadow-color);
+  --tag-chip-hover-shadow: 3px 3px 0 0 var(--shadow-color);
+  --tag-chip-hover-transform: translate(-1px, -1px);
+  --tag-chip-active-shadow: none;
+  --tag-chip-active-transform: translate(1px, 1px);
+
+  --menu-border: 2px solid var(--border-dark);
+  --menu-radius: 4px;
+  --menu-shadow: 4px 4px 0 0 var(--shadow-color);
+
+  --scrollbar-size: 10px;
+  --scrollbar-size-thin: 4px;
+  --scrollbar-radius: 0;
+  --scrollbar-thumb-color: var(--text-secondary);
+  --scrollbar-thumb-hover-color: var(--text-primary);
+  --scrollbar-thumb-border: 3.5px solid transparent;
+
+  --meta-text-transform: uppercase;
+  --meta-letter-spacing: 0.5px;
+  --content-font-family: var(--font-mono);
+  --content-line-height: 1.35;
+  --empty-state-font-family: var(--font-mono);
+  --empty-state-text-transform: uppercase;
+
+
+}
+
+.theme-retro .toggle {
+  background-color: var(--border-dark);
+  border: none;
+  border-radius: 0.1em;
+  box-shadow: -0.3em 0 0 0 var(--border-dark), -0.3em 0.3em 0 0 var(--border-dark),
+    0.3em 0 0 0 var(--border-dark), 0.3em 0.3em 0 0 var(--border-dark), 0 0.3em 0 0 var(--border-dark);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.theme-retro .toggle::before {
+  display: none;
+}
+
+.theme-retro .toggle > .left,
+.theme-retro .toggle > .right {
+  display: flex;
+}
+
+.theme-retro .switch input:checked + .toggle > .left {
+  transform: rotateX(10deg) rotateY(45deg);
+  color: var(--text-muted);
+}
+
+.theme-retro .switch input:checked + .toggle > .right {
+  transform: rotateX(10deg) rotateY(0deg);
+  color: var(--accent-color);
+}
+
+.theme-retro .key-cap {
+  border-bottom-width: 5px;
+  text-transform: uppercase;
+}
+
+.theme-retro .key-group:active .key-cap,
+.theme-retro .key-group.recording .key-cap {
+  transform: translateY(3px);
+  border-bottom-width: 2px;
+}
+
+/* Chips are filled with the text color; their label takes the opposite. */
+.theme-retro .tag-chip {
+  color: var(--retro-chip-text);
+  background: var(--text-primary);
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+}
+
+.theme-retro .drag-handle:hover {
+  background: rgba(var(--shadow-rgb), 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root.theme-retro:not(.light-mode),
+  body.theme-retro:not(.light-mode) {
+    --retro-chip-text: #181818;
+    --bg-body: #181818;
+    --bg-window: #1f1f1f;
+    --bg-content: #181818;
+    --bg-toolbar: #1f1f1f;
+    --bg-panel: #262626;
+    --bg-element: #2c2c2c;
+    --bg-button: #383838;
+    --bg-input: #202020;
+    --text-primary: #ededed;
+    --text-secondary: #a3a3a3;
+    --text-muted: #999999;
+    --border-dark: #000000;
+    --shadow-color: #000000;
+    --line-soft: #000000;
+    --line-strong: #000000;
+    --shadow-xs: 2px 2px 0 0 var(--shadow-color);
+    --shadow-sm: 3px 3px 0 0 var(--shadow-color);
+    --shadow-md: 5px 5px 0 0 var(--shadow-color);
+    --shadow-lg: 4px 4px 0 0 var(--shadow-color);
+    --shadow-inset: inset 4px 4px 0 rgba(255, 255, 255, 0.02);
+
+    --card-selected-background: rgba(255, 255, 255, 0.06);
+    --data-panel-border: 1px solid #333333;
+    --data-panel-hover-background: #2c2c2c;
+  }
+}
+
+:root.dark-mode.theme-retro,
+body.dark-mode.theme-retro {
+  --retro-chip-text: #181818;
+  --bg-body: #181818;
+  --bg-window: #1f1f1f;
+  --bg-content: #181818;
+  --bg-toolbar: #1f1f1f;
+  --bg-panel: #262626;
+  --bg-element: #2c2c2c;
+  --bg-button: #383838;
+  --bg-input: #202020;
+  --text-primary: #ededed;
+  --text-secondary: #a3a3a3;
+  --text-muted: #999999;
+  --border-dark: #000000;
+  --shadow-color: #000000;
+  --line-soft: #000000;
+  --line-strong: #000000;
+  --shadow-xs: 2px 2px 0 0 var(--shadow-color);
+  --shadow-sm: 3px 3px 0 0 var(--shadow-color);
+  --shadow-md: 5px 5px 0 0 var(--shadow-color);
+  --shadow-lg: 4px 4px 0 0 var(--shadow-color);
+  --shadow-inset: inset 4px 4px 0 rgba(255, 255, 255, 0.02);
+
+  --card-selected-background: rgba(255, 255, 255, 0.06);
+  --data-panel-border: 1px solid #333333;
+  --data-panel-hover-background: #2c2c2c;
+
+  --popover-background: #262626;
+  --modal-background: #262626;
+  --toast-background: #262626;
+  --menu-background: #262626;
+  --popover-backdrop-filter: none;
+}
+
+/* ===== Tags: search box and tag picker (theme-specific) ===== */
+
+/* --- Retro-specific accents --- */
+.theme-retro .tag-chip {
+    font-weight: 800;
+}
+
+/* --- Retro: beveled ticket list --- */
+.theme-retro .search-input.dropdown-open {
+  border-bottom: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: inset 4px 4px 0 rgba(var(--shadow-rgb), 0.1);
+}
+
+.theme-retro .tags-dropdown {
+  margin-top: 0;
+  padding: 0;
+  border-top: none;
+  border-radius: 0;
+  background: var(--bg-input);
+  box-shadow: var(--tags-shadow);
+}
+
+.theme-retro .tags-dropdown .tags-list {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.theme-retro .tags-dropdown .tag-chip {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 2px solid var(--border-dark);
+  box-shadow: none;
+  padding: 6px 10px;
+  transform: none;
+}
+
+.theme-retro .tags-dropdown .tag-chip:last-child {
+  border-bottom: none;
+}
+
+.theme-retro .tags-dropdown .tag-chip::before {
+  content: "# ";
+  color: var(--text-primary);
+  font-weight: 800;
+  margin-right: 2px;
+}
+
+.theme-retro .tags-dropdown .tag-chip:hover,
+.theme-retro .tags-dropdown .tag-chip:active {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}

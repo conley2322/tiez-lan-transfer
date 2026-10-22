@@ -1,0 +1,106 @@
+/* Icon-to-field search used by the tag manager and the copy-rules sidebar. */
+.expandable-search {
+  position: relative;
+  width: 28px;
+  max-width: 100%;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: var(--input-radius);
+  background: transparent;
+  transition: width var(--duration-slow) cubic-bezier(0.22, 1.15, 0.36, 1),
+    border-color var(--duration-base) ease, background var(--duration-base) ease;
+}
+
+.expandable-search.is-open {
+  width: min(180px, calc(100% - 36px));
+  border-color: var(--line-soft);
+  background: var(--bg-input);
+}
+
+.expandable-search:focus-within.is-open {
+  border-color: var(--accent-color);
+}
+
+.expandable-search-trigger,
+.expandable-search-clear {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.expandable-search-trigger {
+  left: 0;
+}
+
+.expandable-search-clear {
+  right: 0;
+}
+
+.expandable-search-trigger:hover,
+.expandable-search-clear:hover {
+  background: var(--bg-element);
+  color: var(--accent-color);
+}
+
+.expandable-search-trigger:focus-visible,
+.expandable-search-clear:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+
+.expandable-search-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 26px;
+  min-height: 0;
+  padding: 0 24px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-weight: var(--input-font-weight);
+  font-size: var(--font-size-sm);
+}
+
+.expandable-search-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.expandable-search-input,
+.expandable-search-clear {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) ease;
+}
+
+.expandable-search.is-open .expandable-search-input,
+.expandable-search.is-open .expandable-search-clear {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expandable-search,
+  .expandable-search-input,
+  .expandable-search-clear {
+    transition: none;
+  }
+}

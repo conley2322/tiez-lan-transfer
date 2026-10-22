@@ -1,0 +1,574 @@
+/* Base Theme Variables + Global Resets */
+
+:root {
+  --bg-body: #edf2f8;
+  --bg-window: rgba(246, 249, 252, 0.94);
+  --bg-content: linear-gradient(180deg, #f5f8fc 0%, #edf2f8 100%);
+  --bg-toolbar: rgba(255, 255, 255, 0.82);
+  --bg-panel: rgba(255, 255, 255, 0.78);
+  --bg-input: rgba(255, 255, 255, 0.96);
+  --bg-element: rgba(255, 255, 255, 0.72);
+  --bg-button: rgba(255, 255, 255, 0.76);
+
+  --text-primary: #182235;
+  --text-secondary: #536179;
+  --text-muted: #646d7d;
+
+  --accent-color: #2f6fed;
+  --accent-color-rgb: 47, 111, 237;
+  --accent-hover: #245dce;
+  --on-accent: #ffffff;
+  --status-info: var(--accent-color);
+  --status-success: #10b981;
+  --status-success-rgb: 16, 185, 129;
+  --status-warning: #f59e0b;
+  --status-warning-rgb: 245, 158, 11;
+  --status-danger: #ef4444;
+  --status-danger-rgb: 239, 68, 68;
+  --border-dark: #24364d;
+  --shadow-color: rgba(24, 34, 53, 0.18);
+
+  /* Inks as RGB triplets, for rgba(var(--x-rgb), alpha): shadows, neutral
+     hairlines that work on any surface, and highlights on dark surfaces. */
+  --shadow-rgb: 0, 0, 0;
+  --neutral-rgb: 128, 128, 128;
+  --highlight-rgb: 255, 255, 255;
+  /* Behind photos and video, and text laid over them. */
+  --media-backdrop: #000000;
+  --on-media: #ffffff;
+  /* QR codes stay dark on light so phones can scan them in dark themes. */
+  --qr-backdrop: #ffffff;
+  /* A second hue for labels that must not read as the accent (beta badges). */
+  --tint-purple: #7c3aed;
+  --tint-purple-rgb: 124, 58, 237;
+
+  /* Platform chrome: fixed by the operating system, not by the theme. */
+  --window-close-background: #c42b1c;
+  --window-close-background-pressed: #a52217;
+  --traffic-red: #ff5f56;
+  --traffic-yellow: #ffbd2e;
+  --traffic-green: #27c93f;
+  --traffic-glyph: rgba(0, 0, 0, 0.5);
+
+  /* File-type icons in file transfer. */
+  --file-tint-pdf: #e05252;
+  --file-tint-archive: #a469d1;
+  --file-tint-audio: #d66b9b;
+  --file-tint-executable: #62758a;
+  --file-tint-spreadsheet: #2fa36b;
+  --file-tint-presentation: #e47d3c;
+  --file-tint-code: #4e82d8;
+  --file-tint-image: #4a9f82;
+  --file-tint-video: #8a69d5;
+  /* LAN transfer avatars, one per sending device (tinted background, icon in the tone). */
+  --avatar-tone-1: #3d6fd6;
+  --avatar-tone-2: #2b7a4b;
+  --avatar-tone-3: #7b5bd0;
+  --avatar-tone-4: #b85a1f;
+  --avatar-tone-5: #c74b86;
+  --avatar-tone-6: #17807f;
+
+  /* Floating over somebody else's desktop — the corner drop box and the
+     transfer floats. They are HUD chrome, not app surfaces, so they keep one
+     dark ink whatever theme the settings window is wearing. */
+  --hud-panel: rgba(28, 28, 32, 0.86);
+  --hud-panel-line: rgba(255, 255, 255, 0.22);
+  --hud-bar: rgba(255, 255, 255, 0.26);
+  --hud-bar-line: rgba(255, 255, 255, 0.4);
+  --hud-row-hot: rgba(255, 255, 255, 0.16);
+  --on-hud: rgba(255, 255, 255, 0.92);
+  --on-hud-muted: rgba(255, 255, 255, 0.62);
+  /* 设置 → 角落拖拽框 → 不透明度, as a bare percentage. The HUD mixes its own
+     fill with transparency by this much and keeps its text at full strength. */
+  --corner-opacity: 80;
+
+  --line-soft: rgba(24, 34, 53, 0.12);
+  --line-strong: rgba(24, 34, 53, 0.22);
+  --shadow-xs: 0 4px 10px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 10px 24px rgba(15, 23, 42, 0.1);
+  --shadow-md: 0 18px 38px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 26px 64px rgba(15, 23, 42, 0.16);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --accent-soft: rgba(var(--accent-color-rgb), 0.12);
+
+  --radius-window: 22px;
+  --radius-panel: 16px;
+  --radius-card: 18px;
+  --radius-control: 14px;
+  --radius-pill: 9999px;
+  /* Small corners for chips, badges and inner elements. */
+  --radius-2xs: 2px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --spacing-md: 16px;
+  --spacing-sm: 8px;
+  --surface-opacity-scale: 1;
+
+  /* Layout & density (themes override these for distinct structure) */
+  --layout-header-padding-y: 6px;
+  --layout-header-inner-x: var(--spacing-md);
+  --layout-header-inner-gap: var(--spacing-sm);
+  --layout-header-actions-gap: 4px;
+  --layout-search-margin-top: 2px;
+  --layout-search-padding-x: var(--spacing-md);
+  --layout-search-input-padding: 10px 12px 10px 36px;
+  --layout-search-input-font-size: 14px;
+  --layout-search-icon-left: 12px;
+  --layout-main-padding-y: 6px;
+  --layout-main-padding-bottom: 12px;
+  --layout-main-gap: 6px;
+  --layout-list-padding-x: 8px;
+  --layout-item-margin-x: 8px;
+  --layout-item-margin-bottom: 2px;
+  --layout-item-padding: 10px 12px 5px 12px;
+  --layout-item-padding-compact: 4px 4px 4px 10px;
+  --layout-item-background: var(--bg-element);
+  --layout-item-divider: none;
+  --layout-drag-handle-radius: 10px;
+  --layout-btn-icon-padding: 6px;
+  --layout-meta-font-size: 11px;
+  --layout-meta-font-weight: 700;
+  --layout-meta-border-bottom: 1px dashed var(--panel-divider-color);
+  --layout-meta-padding-bottom: 0;
+  --layout-tag-list-gap: 4px;
+  --layout-tag-chip-padding: 1px 6px;
+  --tag-chip-font-weight: 600;
+  --tag-chip-font-family: inherit;
+  --tag-chip-text-transform: none;
+  --tag-chip-letter-spacing: 0;
+
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Inter", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", "Menlo", "Consolas", monospace;
+  /* Type scale. Use these instead of pixel values; 10px is the smallest
+     readable size in the compact window. */
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+
+  /* Stacking layers for anything that floats above the page. Pick a layer
+     instead of inventing a number; values below 1000 are local to a component. */
+  --z-popover: 1000;       /* hover previews, inline suggestion lists */
+  --z-dropdown: 1100;      /* menus opened from a button: sort, AI, tags, "more" */
+  --z-overlay: 2000;       /* in-view overlays: drag-drop zone, fullscreen editor, dragged card */
+  --z-context-menu: 3000;  /* right-click menus */
+  --z-modal: 4000;         /* dialog scrim and panel */
+  --z-toast: 5000;         /* toasts stay visible above dialogs */
+  --z-texture: 9000;       /* decorative full-window textures (pointer-events: none) */
+
+  /* Motion: three durations, zeroed under reduced motion. Animate opacity
+     and transform; never layout (width, height, grid tracks, position). */
+  --duration-fast: 120ms;  /* hover and press feedback */
+  --duration-base: 180ms;  /* state changes: open, select, reveal */
+  --duration-slow: 240ms;  /* larger surfaces: panels, search expanding */
+
+  --clipboard-item-font-size: 13px;
+  --clipboard-tag-font-size: 10px;
+
+  --shell-background: var(--bg-window);
+  --shell-border: 1px solid var(--line-soft);
+  --shell-shadow: var(--shadow-lg);
+  --shell-radius: var(--radius-window);
+  --shell-backdrop-filter: none;
+
+  --toolbar-border: 1px solid var(--line-soft);
+  --toolbar-shadow: none;
+
+  --title-background: transparent;
+  --title-color: var(--text-primary);
+  --title-border: none;
+  --title-radius: 0;
+  --title-shadow: none;
+  --title-padding: 0;
+  --title-transform: none;
+  --title-letter-spacing: 0;
+  --title-font-size: 18px;
+  --title-font-weight: 700;
+  --title-font-family: var(--font-main);
+
+  --input-border: 1px solid var(--line-soft);
+  --input-radius: var(--radius-control);
+  --input-shadow: var(--shadow-inset);
+  --input-focus-border-color: var(--accent-color);
+  --input-focus-shadow: 0 0 0 3px var(--accent-soft);
+  --input-font-weight: 500;
+
+  --button-border: 1px solid var(--line-soft);
+  --button-radius: 12px;
+  --button-shadow: var(--shadow-xs);
+  --button-hover-border-color: var(--line-strong);
+  --button-hover-shadow: var(--shadow-sm);
+  --button-hover-transform: translateY(-1px);
+  --button-active-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+  --button-active-transform: translateY(0);
+  --button-active-filled-background: var(--accent-color);
+  --button-active-filled-color: #ffffff;
+  --button-active-filled-border-color: var(--accent-color);
+  --button-active-filled-shadow: 0 12px 24px rgba(var(--accent-color-rgb), 0.28);
+
+  --card-border: 1px solid var(--line-soft);
+  --card-radius: var(--radius-card);
+  --card-shadow: var(--shadow-sm);
+  --card-hover-border-color: var(--line-strong);
+  --card-hover-shadow: var(--shadow-md);
+  --card-hover-transform: translateY(-2px);
+  --card-active-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  --card-active-transform: translateY(0);
+  --card-selected-background: rgba(var(--accent-color-rgb), 0.08);
+  --card-selected-border-color: rgba(var(--accent-color-rgb), 0.5);
+  --card-selected-shadow: 0 16px 32px rgba(var(--accent-color-rgb), 0.18);
+  --card-selected-outline: 2px solid var(--card-selected-border-color);
+  --card-selected-outline-offset: -2px;
+
+  --panel-border: 1px solid var(--line-soft);
+  --panel-radius: var(--radius-panel);
+  --panel-shadow: var(--shadow-sm);
+  --panel-header-background: transparent;
+  --panel-header-border-color: var(--line-soft);
+  --panel-divider-color: rgba(24, 34, 53, 0.08);
+
+  --data-panel-border: 1px solid var(--line-soft);
+  --data-panel-radius: 12px;
+  --data-panel-shadow: var(--shadow-inset);
+  --data-panel-hover-background: rgba(255, 255, 255, 0.98);
+
+  /* Control geometry shared by every settings page. */
+  --range-track-height: 4px;
+  --range-thumb-size: 14px;
+  --range-track-border: none;
+  --range-track-radius: var(--radius-pill);
+  --range-track-shadow: none;
+  --range-track-background: color-mix(in srgb, var(--text-muted) 28%, transparent);
+  --range-thumb-border: 2px solid #ffffff;
+  --range-thumb-radius: var(--radius-pill);
+  --range-thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --range-thumb-active-transform: scale(1.08);
+  --range-thumb-active-shadow: 0 0 0 4px rgba(var(--accent-color-rgb), 0.2);
+
+  /* Track is border-box: thumb-offset * 2 + thumb-size + 2px border = height. */
+  --switch-width: 36px;
+  --switch-height: 20px;
+  --switch-track-background: color-mix(in srgb, var(--text-muted) 32%, transparent);
+  --switch-track-border: 1px solid transparent;
+  --switch-track-radius: var(--radius-pill);
+  --switch-track-shadow: none;
+  --switch-track-active-background: var(--accent-color);
+  --switch-track-active-border-color: var(--accent-color);
+  --switch-thumb-background: #ffffff;
+  --switch-thumb-border: none;
+  --switch-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --switch-thumb-size: 14px;
+  --switch-thumb-offset: 2px;
+  --switch-thumb-translate: 16px;
+
+  --keycap-border: 1px solid var(--line-soft);
+  --keycap-radius: 12px;
+  --keycap-shadow: var(--shadow-xs);
+  --keycap-active-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  --keycap-active-transform: translateY(1px);
+
+  --segmented-border: 1px solid var(--line-soft);
+  --segmented-radius: 14px;
+  --segmented-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+  --segment-radius: 10px;
+  --segment-active-background: rgba(255, 255, 255, 0.92);
+  --segment-active-color: var(--text-primary);
+  --segment-active-shadow: var(--shadow-xs);
+
+  --modal-border: 1px solid var(--line-soft);
+  --modal-radius: calc(var(--panel-radius) * 1.5);
+  --modal-shadow: var(--shadow-lg);
+  --modal-title-background: transparent;
+  --modal-title-color: var(--text-primary);
+  --modal-title-border: none;
+  --modal-title-shadow: none;
+  --modal-title-padding: 0;
+  --modal-title-transform: none;
+  --modal-title-letter-spacing: 0;
+  --modal-title-font-weight: 700;
+  --dialog-button-border: 1px solid var(--line-soft);
+  --dialog-button-radius: var(--button-radius);
+  --dialog-button-shadow: var(--shadow-xs);
+  --dialog-button-hover-shadow: var(--shadow-sm);
+  --dialog-button-hover-transform: translateY(-1px);
+  --dialog-button-active-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  --dialog-button-active-transform: translateY(0);
+
+  --tags-border: 1px solid var(--line-soft);
+  --tags-radius: 8px;
+  --tags-shadow: none;
+  --tag-chip-border: none;
+  --tag-chip-radius: 4px;
+  --tag-chip-shadow: none;
+  --tag-chip-hover-shadow: none;
+  --tag-chip-hover-transform: none;
+  --tag-chip-active-shadow: none;
+  --tag-chip-active-transform: none;
+
+  --menu-border: 1px solid var(--line-soft);
+  --menu-radius: var(--panel-radius);
+  --menu-shadow: var(--shadow-md);
+  --menu-item-hover-background: var(--accent-color);
+  --menu-item-hover-color: #ffffff;
+
+  /* Shared elevated surface tokens for popovers, dropdowns, menus, modals & toasts.
+     Elevated surfaces float above window content and must never be transparent. */
+  --popover-background: color-mix(in srgb, var(--bg-input) 94%, var(--bg-panel) 6%);
+  --modal-background: color-mix(in srgb, var(--bg-input) 96%, var(--bg-panel) 4%);
+  --toast-background: color-mix(in srgb, var(--bg-input) 96%, var(--bg-panel) 4%);
+  --menu-background: color-mix(in srgb, var(--bg-input) 94%, var(--bg-panel) 6%);
+  --popover-color: var(--text-primary);
+  --popover-border: var(--menu-border);
+  --popover-radius: var(--menu-radius);
+  --popover-shadow: var(--menu-shadow);
+  --popover-backdrop-filter: blur(28px) saturate(180%);
+
+  --toast-color: var(--text-primary);
+  --toast-border: var(--menu-border);
+  --toast-radius: var(--menu-radius);
+  --toast-shadow: var(--menu-shadow);
+  --toast-font-family: var(--font-main);
+
+  --emoji-tabs-background: var(--bg-element);
+  --emoji-tabs-border: var(--segmented-border);
+  --emoji-tabs-radius: var(--segmented-radius);
+  --emoji-tabs-shadow: var(--segmented-shadow);
+  --emoji-tab-radius: var(--segment-radius);
+  --emoji-active-background: var(--segment-active-background);
+  --emoji-active-color: var(--segment-active-color);
+  --emoji-active-shadow: var(--segment-active-shadow);
+  --emoji-button-background: var(--bg-button);
+  --emoji-button-border: var(--button-border);
+  --emoji-button-radius: var(--button-radius);
+  --emoji-button-shadow: var(--button-shadow);
+  --emoji-card-background: var(--bg-element);
+  --emoji-card-border: var(--card-border);
+  --emoji-card-radius: var(--card-radius);
+  --emoji-card-shadow: var(--card-shadow);
+
+  --advanced-surface-background: color-mix(in srgb, var(--bg-panel) 72%, transparent);
+  --advanced-card-background: color-mix(in srgb, var(--bg-panel) 58%, transparent);
+  --advanced-card-border: var(--panel-border);
+  --advanced-card-radius: var(--panel-radius);
+  --advanced-input-background: var(--bg-input);
+  --advanced-input-border: var(--input-border);
+  --advanced-input-radius: var(--input-radius);
+
+  --compact-card-radius: 8px;
+  --compact-media-radius: 6px;
+
+  --compact-action-background: var(--bg-button);
+  --compact-action-color: var(--text-primary);
+  --compact-action-border: var(--button-border);
+  --compact-action-radius: var(--button-radius);
+  --compact-action-shadow: var(--button-shadow);
+  --compact-action-backdrop-filter: none;
+  --compact-action-hover-background: var(--bg-input);
+  --compact-action-hover-border-color: var(--button-hover-border-color);
+  --compact-action-hover-shadow: var(--button-hover-shadow);
+  --compact-action-hover-transform: var(--button-hover-transform);
+  --compact-action-active-background: var(--button-active-filled-background);
+  --compact-action-active-color: var(--button-active-filled-color);
+  --compact-action-active-border-color: var(--button-active-filled-border-color);
+  --compact-action-active-shadow: var(--button-active-filled-shadow);
+
+  --scrollbar-size: 10px;
+  --scrollbar-size-thin: 4px;
+  --scrollbar-radius: var(--radius-pill);
+  --scrollbar-thumb-color: var(--text-secondary);
+  --scrollbar-thumb-hover-color: var(--text-primary);
+  --scrollbar-thumb-border: 2px solid transparent;
+
+  --meta-text-transform: none;
+  --meta-letter-spacing: 0;
+  --content-font-family: var(--font-main);
+  --content-line-height: 1.45;
+  --empty-state-font-family: var(--font-main);
+  --empty-state-text-transform: none;
+
+
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode) {
+    --bg-body: #131720;
+    --bg-window: rgba(22, 27, 38, 0.94);
+    --bg-content: linear-gradient(180deg, #171d28 0%, #131720 100%);
+    --bg-toolbar: rgba(20, 24, 33, 0.84);
+    --bg-panel: rgba(31, 37, 49, 0.86);
+    --bg-input: rgba(22, 28, 39, 0.96);
+    --bg-element: rgba(28, 34, 46, 0.88);
+    --bg-button: rgba(31, 37, 49, 0.86);
+
+    --text-primary: #edf1f8;
+    --text-secondary: #a7b3c9;
+    --text-muted: #848ea1;
+
+    --border-dark: #edf1f8;
+    --shadow-color: rgba(0, 0, 0, 0.42);
+
+    --line-soft: rgba(255, 255, 255, 0.12);
+    --line-strong: rgba(255, 255, 255, 0.2);
+    --shadow-xs: 0 4px 12px rgba(0, 0, 0, 0.22);
+    --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.28);
+    --shadow-md: 0 18px 38px rgba(0, 0, 0, 0.34);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.4);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    --segment-active-background: rgba(255, 255, 255, 0.12);
+    --data-panel-hover-background: rgba(34, 40, 52, 0.98);
+    --panel-divider-color: rgba(255, 255, 255, 0.08);
+    --button-active-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+    --card-active-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+  }
+}
+
+/* Popup shapes follow each theme's panel/button scale. Themes set that scale on
+   body.theme-*, so the derived tokens are re-resolved on body; otherwise every
+   theme would inherit the :root values. Themes may still override them. */
+body {
+  --menu-radius: var(--panel-radius);
+  --popover-radius: var(--menu-radius);
+  --toast-radius: var(--menu-radius);
+  --modal-radius: calc(var(--panel-radius) * 1.5);
+  --dialog-button-radius: var(--button-radius);
+  --border-color: var(--line-soft);
+
+  /* Two-pane pages (settings, copy rules, tag manager) share one sidebar. */
+  --pane-sidebar-width: clamp(148px, 26%, 216px);
+  --pane-sidebar-background: color-mix(in srgb, var(--bg-panel) 55%, transparent);
+  --pane-divider: var(--panel-divider-color);
+  --pane-item-height: 32px;
+  --pane-item-radius: 6px;
+  --pane-item-hover: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --pane-item-selected: rgba(var(--accent-color-rgb), 0.14);
+  --pane-content-pad-x: 16px;
+}
+
+:root.dark-mode,
+body.dark-mode {
+  --bg-body: #131720;
+  --bg-window: rgba(22, 27, 38, 0.94);
+  --bg-content: linear-gradient(180deg, #171d28 0%, #131720 100%);
+  --bg-toolbar: rgba(20, 24, 33, 0.84);
+  --bg-panel: rgba(31, 37, 49, 0.86);
+  --bg-input: rgba(22, 28, 39, 0.96);
+  --bg-element: rgba(28, 34, 46, 0.88);
+  --bg-button: rgba(31, 37, 49, 0.86);
+
+  --text-primary: #edf1f8;
+  --text-secondary: #a7b3c9;
+  --text-muted: #848ea1;
+
+  --border-dark: #edf1f8;
+  --shadow-color: rgba(0, 0, 0, 0.42);
+
+  --line-soft: rgba(255, 255, 255, 0.12);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --shadow-xs: 0 4px 12px rgba(0, 0, 0, 0.22);
+  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 18px 38px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.4);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --segment-active-background: rgba(255, 255, 255, 0.12);
+  --data-panel-hover-background: rgba(34, 40, 52, 0.98);
+  --panel-divider-color: rgba(255, 255, 255, 0.08);
+  --button-active-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+  --card-active-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+
+  --popover-background: color-mix(in srgb, var(--bg-input) 95%, var(--bg-panel) 5%);
+  --modal-background: color-mix(in srgb, var(--bg-input) 97%, var(--bg-panel) 3%);
+  --toast-background: color-mix(in srgb, var(--bg-input) 95%, var(--bg-panel) 5%);
+  --menu-background: color-mix(in srgb, var(--bg-input) 95%, var(--bg-panel) 5%);
+  --popover-backdrop-filter: blur(28px) saturate(180%);
+}
+
+/* App chrome (buttons, labels, list rows) is not selectable, so a slightly
+   missed drag doesn't highlight it. macOS (WKWebView) only understands the
+   -webkit- prefix; without it none of these rules applied there. */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-main);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* What the user types or reads to copy stays selectable. */
+input,
+textarea,
+[contenteditable=""],
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+body {
+  position: relative;
+  margin: 0;
+  background-color: transparent;
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+html,
+body /* design-ok: the window behind the shell stays transparent under any theme */ {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--shell-radius);
+  overflow: hidden;
+  background-color: transparent !important;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  background: var(--shell-background);
+  border: var(--shell-border);
+  border-radius: var(--shell-radius);
+  overflow: hidden;
+  box-shadow: var(--shell-shadow);
+  backdrop-filter: var(--shell-backdrop-filter);
+  -webkit-backdrop-filter: var(--shell-backdrop-filter);
+  background-clip: padding-box;
+}
+
+#root::before {
+  display: none;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  -webkit-clip-path: inset(0 round var(--shell-radius));
+  clip-path: inset(0 round var(--shell-radius));
+}
+
+::selection {
+  background: var(--accent-color);
+  color: var(--on-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

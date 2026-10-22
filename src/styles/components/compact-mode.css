@@ -1,0 +1,940 @@
+/* Compact Mode Styles - Final Cleanup */
+
+/* Base Item Styles */
+.history-item.compact {
+    /* Padding comes from --layout-item-padding-compact (layout.css). Keep rows
+       dense, but never shorter than the ··· action button (20px). */
+    min-height: 28px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    gap: 0;
+    overflow: visible;
+    border-radius: var(--compact-card-radius);
+    z-index: 1;
+    margin-bottom: 0;
+}
+
+/* Add extra padding when drag handle is present to avoid overlap */
+.history-item.compact:has(.drag-handle) {
+    padding-left: 28px;
+}
+
+.history-item.compact:hover {
+    z-index: 100;
+}
+
+/* Hide Meta Header (Source App, Icon) */
+.history-item.compact .item-meta {
+    display: none;
+}
+
+/* Image Preview */
+.history-item.compact .image-preview-frame {
+    min-height: 38px;
+}
+
+.history-item.compact .image-preview {
+    max-height: 38px;
+    height: 38px;
+    width: auto;
+    min-width: 38px;
+    max-width: 80px;
+    border-radius: var(--compact-media-radius);
+    margin-top: 0;
+    display: block;
+    object-fit: contain;
+    background-color: rgba(var(--shadow-rgb), 0.05);
+    align-self: flex-start;
+}
+
+/* Hover Detail Popover */
+/* Original class kept for reference or non-portal usage if any */
+.compact-popover {
+    display: none;
+}
+
+.compact-popover-portal {
+    position: fixed;
+    width: 320px;
+    max-width: 80vw;
+    background: var(--popover-background);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+    color: var(--popover-color);
+    border: var(--popover-border);
+    box-shadow: var(--popover-shadow);
+    border-radius: var(--popover-radius);
+    padding: 12px;
+    z-index: var(--z-popover);
+    line-height: 1.5;
+    pointer-events: auto;
+}
+
+/* Explicit standard dark mode fix (non-retro) */
+.compact-popover-portal.dark-mode {
+    background: var(--popover-background);
+    border-color: var(--line-strong);
+    color: var(--popover-color);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-5px);
+        /* Slide down effect */
+    }
+
+    to {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+}
+
+/* Popover Content Styling */
+.popover-meta {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Tags sit left of the time/actions slot — never share an overlap grid with time. */
+.history-item.compact .item-tags-container {
+    position: relative;
+    bottom: auto;
+    right: auto;
+    top: auto;
+    margin: 0;
+    z-index: 5;
+    opacity: 0.9;
+    max-width: min(42vw, 160px);
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    pointer-events: auto;
+    transform: none;
+    padding-right: 0;
+    transition: opacity var(--duration-base) ease, max-width var(--duration-base) ease;
+}
+
+body.compact-show-time .history-item.compact .item-tags-container,
+html.compact-show-time .history-item.compact .item-tags-container {
+    max-width: min(38vw, 140px);
+}
+
+/* When hovered or selected, keep tags visible beside the ··· button. */
+.history-item.compact:hover .item-tags-container:not(.tag-edit-active),
+.history-item.compact.selected .item-tags-container:not(.tag-edit-active) {
+    max-width: min(40vw, 150px);
+}
+
+/* Allow tag suggestion popover to extend outside the tag strip while editing */
+.history-item.compact .item-tags-container.tag-edit-active {
+    position: absolute;
+    top: 50%;
+    bottom: auto;
+    right: 8px;
+    left: auto;
+    transform: translateY(-50%);
+    overflow: visible;
+    z-index: 250;
+    opacity: 1;
+    max-width: calc(100% - 16px);
+    background: var(--bg-element);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color, rgba(var(--neutral-rgb), 0.2));
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    box-shadow: 0 4px 16px rgba(var(--shadow-rgb), 0.25);
+}
+
+.history-item.compact.editing-tags,
+.history-item.compact:has(.item-tags-container.tag-edit-active) {
+    z-index: 250;
+}
+
+.history-item.compact .compact-note-indicator {
+    position: absolute;
+    bottom: 2px;
+    left: 10px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, var(--bg-element) 80%, transparent);
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.history-item.compact .compact-note-indicator:hover {
+    opacity: 1;
+    color: var(--accent-color);
+}
+
+/* Note editor in compact mode: seamless unified card without nested boxes */
+.history-item.compact.editing-note,
+.history-item.compact.editing-note:has(.drag-handle),
+.history-item.compact:has(.item-note-editor),
+.history-item.compact:has(.item-note-editor):has(.drag-handle) {
+    padding: 8px 10px 6px 10px;
+    min-height: auto;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    box-sizing: border-box;
+    z-index: 250;
+}
+
+.history-item.compact.editing-note .drag-handle,
+.history-item.compact:has(.item-note-editor) .drag-handle {
+    display: none;
+}
+
+.history-item.compact.editing-note .content-preview-shell,
+.history-item.compact:has(.item-note-editor) .content-preview-shell {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 4px 0;
+    border-bottom: 1px solid var(--border-color, rgba(var(--neutral-rgb), 0.15));
+}
+
+.history-item.compact.editing-note .content-preview,
+.history-item.compact:has(.item-note-editor) .content-preview {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-secondary);
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+    max-height: 16px;
+    margin: 0;
+    padding: 0;
+}
+
+.history-item.compact.editing-note .item-note,
+.history-item.compact:has(.item-note-editor) .item-note {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Strip all nested card borders, outlines, backgrounds, and shadows */
+.history-item.compact.editing-note .item-note-editor-inner,
+.history-item.compact:has(.item-note-editor) .item-note-editor-inner {
+    width: 100%;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+.history-item.compact.editing-note .item-note-editor-inner:focus-within,
+.history-item.compact:has(.item-note-editor) .item-note-editor-inner:focus-within {
+    border: none;
+    box-shadow: none;
+}
+
+.history-item.compact.editing-note .item-note-input,
+.history-item.compact:has(.item-note-editor) .item-note-input {
+    min-height: 44px;
+    max-height: 120px;
+    padding: 4px 0 6px 0;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+    resize: none;
+    color: var(--text-primary);
+}
+
+.history-item.compact.editing-note .item-note-editor-footer,
+.history-item.compact:has(.item-note-editor) .item-note-editor-footer {
+    padding: 6px 0 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--border-color, rgba(var(--neutral-rgb), 0.15)) 60%, transparent);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.history-item.compact.editing-note .item-note-hint,
+.history-item.compact:has(.item-note-editor) .item-note-hint {
+    font-size: var(--font-size-2xs);
+    color: var(--text-muted);
+}
+
+.history-item.compact.editing-note .btn-note-action,
+.history-item.compact:has(.item-note-editor) .btn-note-action {
+    font-size: var(--font-size-xs);
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+}
+
+/* Larger tags styling for better readability */
+.history-item.compact .item-tags-container .tag-chip {
+    font-size: var(--clipboard-tag-font-size);
+    padding: 0px 4px;
+    min-height: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--compact-action-radius);
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Button Wrapper - reset .item-meta for structure */
+.history-item.compact .item-meta {
+    display: flex;
+    position: static;
+    margin: 0;
+    border: none;
+    height: 0;
+    overflow: visible;
+}
+
+/* Hide the App Info (Source/Icon/Pin) on the left side */
+.history-item.compact .item-meta .app-info {
+    display: none;
+}
+
+/* Show Drag Handle in Compact Mode */
+.history-item.compact .drag-handle {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.7;
+    z-index: 20;
+    width: 14px;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-item.compact .drag-handle:hover {
+    opacity: 1;
+    color: var(--accent-color);
+}
+
+/* Passthrough in normal mode; compact overrides to a shared time/actions slot. */
+.item-meta-right-slot {
+    display: contents;
+}
+
+/* The right side wrapper: [tags][time/actions slot] */
+.history-item.compact .item-meta-right {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    bottom: auto;
+    transform: translateY(-50%);
+    height: auto;
+    z-index: 200;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: min(72%, 300px);
+    min-width: 0;
+    pointer-events: none;
+}
+
+/* Maintain vertical center for first item */
+.first-virtual-item .history-item.compact .item-meta-right {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Time and ··· share one slot; tags never enter this grid. */
+.history-item.compact .item-meta-right-slot {
+    position: relative;
+    display: grid;
+    grid-template-areas: "slot";
+    align-items: center;
+    justify-items: end;
+    flex: 0 0 auto;
+    min-width: 20px;
+    min-height: 20px;
+    pointer-events: none;
+}
+
+/* Button Actions Styling — only overlays the time slot, not tags */
+.history-item.compact .item-actions {
+    grid-area: slot;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(6px);
+    transition: opacity var(--duration-base) cubic-bezier(0.16, 1, 0.3, 1), transform var(--duration-base) cubic-bezier(0.16, 1, 0.3, 1), visibility var(--duration-base);
+    pointer-events: none;
+
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+}
+
+.dark-mode .history-item.compact .item-actions {
+    background: transparent;
+    border-color: transparent;
+}
+
+.history-item.compact:hover:not(.keyboard-owns-list *) .item-actions,
+.history-item.compact.selected .item-actions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+body.hide-unselected-item-actions .history-item.compact:not(.selected):not(:hover) .item-actions,
+body.hide-unselected-item-actions.keyboard-owns-list .history-item.compact:not(.selected) .item-actions {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(6px);
+    pointer-events: none;
+}
+
+body.hide-unselected-item-actions .history-item.compact.selected .item-actions,
+body.hide-unselected-item-actions .history-item.compact:hover:not(.keyboard-owns-list *) .item-actions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.history-item.compact:has(.compact-more-btn.active) .item-actions,
+.history-item.compact:has(.ai-options-dropdown) .item-actions {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+/* Completely hide actions & right info when editing tags or notes in compact mode */
+.history-item.compact.editing-tags .item-actions,
+.history-item.compact.editing-tags .item-meta-right,
+.history-item.compact.editing-tags .item-meta-right-slot,
+.history-item.compact.editing-tags .item-meta-right-info,
+.history-item.compact.editing-tags .compact-more-btn,
+.history-item.compact.editing-tags .compact-more-action-wrap,
+.history-item.compact.editing-note .item-actions,
+.history-item.compact.editing-note .item-meta-right,
+.history-item.compact.editing-note .item-meta-right-slot,
+.history-item.compact.editing-note .item-meta-right-info,
+.history-item.compact.editing-note .compact-more-btn,
+.history-item.compact.editing-note .compact-more-action-wrap,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .item-actions,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .item-meta-right,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .item-meta-right-slot,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .item-meta-right-info,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .compact-more-btn,
+.history-item.compact:has(.item-tags-container.tag-edit-active) .compact-more-action-wrap,
+.history-item.compact:has(.item-note-editor) .item-actions,
+.history-item.compact:has(.item-note-editor) .item-meta-right,
+.history-item.compact:has(.item-note-editor) .item-meta-right-slot,
+.history-item.compact:has(.item-note-editor) .item-meta-right-info,
+.history-item.compact:has(.item-note-editor) .compact-more-btn,
+.history-item.compact:has(.item-note-editor) .compact-more-action-wrap {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+}
+
+/* Timestamp & Quick Paste Hint — shares the slot with ···, not with tags */
+.history-item.compact .item-meta-right-info {
+    grid-area: slot;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-xs);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    white-space: nowrap;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
+    transform: none;
+    transition: opacity var(--duration-base) cubic-bezier(0.16, 1, 0.3, 1), visibility var(--duration-base);
+}
+
+/* In compact mode, timestamp is hidden by default; visible only when compact-show-time is active */
+.history-item.compact .item-meta-right-info > span:not(.quick-paste-hint) {
+    display: none;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+body.compact-show-time .history-item.compact .item-meta-right-info > span:not(.quick-paste-hint),
+html.compact-show-time .history-item.compact .item-meta-right-info > span:not(.quick-paste-hint) {
+    display: inline-block;
+}
+
+.history-item.compact:hover:not(.keyboard-owns-list *) .item-meta-right-info,
+.history-item.compact.selected .item-meta-right-info,
+.history-item.compact:has(.ai-options-dropdown) .item-meta-right-info,
+.history-item.compact:has(.compact-more-btn.active) .item-meta-right-info {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.hide-unselected-item-actions .history-item.compact:not(.selected):not(:hover) .item-meta-right-info,
+body.hide-unselected-item-actions.keyboard-owns-list .history-item.compact:not(.selected) .item-meta-right-info {
+    opacity: 0.68;
+    visibility: visible;
+}
+
+body.hide-unselected-item-actions .history-item.compact.selected .item-meta-right-info,
+body.hide-unselected-item-actions .history-item.compact:hover:not(.keyboard-owns-list *) .item-meta-right-info {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.history-item.compact .item-actions .btn-icon {
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    background: var(--compact-action-background);
+    color: var(--compact-action-color);
+    border: var(--compact-action-border);
+    border-radius: var(--compact-action-radius);
+    box-shadow: var(--compact-action-shadow);
+    backdrop-filter: var(--compact-action-backdrop-filter);
+    -webkit-backdrop-filter: var(--compact-action-backdrop-filter);
+    transition:
+        background var(--duration-base) ease,
+        border-color var(--duration-base) ease,
+        color var(--duration-base) ease,
+        box-shadow var(--duration-base) ease,
+        transform var(--duration-base) ease;
+}
+
+.history-item.compact .item-actions .btn-icon:hover {
+    background: var(--compact-action-hover-background);
+    color: var(--accent-color);
+    border-color: var(--compact-action-hover-border-color);
+    box-shadow: var(--compact-action-hover-shadow);
+    transform: var(--compact-action-hover-transform);
+}
+
+.history-item.compact .item-actions .btn-icon:active {
+    box-shadow: var(--button-active-shadow);
+    transform: var(--button-active-transform);
+}
+
+.history-item.compact .item-actions .btn-icon.active {
+    background: var(--compact-action-active-background);
+    color: var(--compact-action-active-color);
+    border-color: var(--compact-action-active-border-color);
+    box-shadow: var(--compact-action-active-shadow);
+}
+
+.history-item.compact .item-actions .btn-icon:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.history-item.compact .item-actions .btn-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.history-item.compact .ai-options-dropdown {
+    background: var(--popover-background);
+    color: var(--popover-color);
+    border: var(--popover-border);
+    border-radius: var(--popover-radius);
+    box-shadow: var(--popover-shadow);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+}
+
+.history-item.compact .ai-options-dropdown button {
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border: var(--button-border);
+    border-radius: var(--button-radius);
+    box-shadow: var(--button-shadow);
+}
+
+.history-item.compact .ai-options-dropdown button:hover {
+    background: var(--menu-item-hover-background);
+    color: var(--menu-item-hover-color);
+}
+
+/* Compact Action Menu (Three-dots Dropdown) */
+.compact-more-action-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.compact-action-menu {
+    position: fixed;
+    z-index: var(--z-dropdown);
+    width: max-content;
+    min-width: 140px;
+    max-width: 220px;
+    padding: 4px;
+    border-radius: var(--menu-radius);
+    background: var(--menu-background);
+    border: var(--menu-border);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: compactMenuFadeIn var(--duration-fast) cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-user-select: none;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+@keyframes compactMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.compact-action-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 28px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--compact-action-radius);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+    box-sizing: border-box;
+}
+
+.compact-action-menu-item svg {
+    flex-shrink: 0;
+    opacity: 0.82;
+}
+
+.compact-action-menu-item span {
+    flex: 1;
+    white-space: nowrap;
+}
+
+/* Default active state (when not hovered): subtle accent tint */
+.compact-action-menu-item.is-active {
+    color: var(--accent-color);
+    font-weight: 600;
+    background: var(--accent-soft);
+}
+
+.compact-action-menu-item.is-active svg {
+    color: var(--accent-color);
+    opacity: 1;
+}
+
+/* Hover, Focus, and Active states: GUARANTEED high contrast! */
+.compact-action-menu-item:hover,
+.compact-action-menu-item:focus-visible,
+.compact-action-menu-item:active,
+.compact-action-menu-item.is-active:hover,
+.compact-action-menu-item.is-active:focus-visible,
+.compact-action-menu-item.is-active:active {
+    outline: none;
+    background: var(--menu-item-hover-background);
+    color: var(--menu-item-hover-color);
+}
+
+.compact-action-menu-item:hover svg,
+.compact-action-menu-item:focus-visible svg,
+.compact-action-menu-item:active svg,
+.compact-action-menu-item.is-active:hover svg,
+.compact-action-menu-item.is-active:focus-visible svg,
+.compact-action-menu-item.is-active:active svg {
+    color: var(--menu-item-hover-color);
+    opacity: 1;
+}
+
+/* Danger Item: high contrast danger styling */
+.compact-action-menu-item.danger {
+    color: var(--status-danger);
+}
+
+.compact-action-menu-item.danger svg {
+    color: var(--status-danger);
+}
+
+.compact-action-menu-item.danger:hover,
+.compact-action-menu-item.danger:focus-visible,
+.compact-action-menu-item.danger:active {
+    background: var(--status-danger);
+    color: var(--on-accent);
+}
+
+.compact-action-menu-item.danger:hover svg,
+.compact-action-menu-item.danger:focus-visible svg,
+.compact-action-menu-item.danger:active svg {
+    color: var(--on-accent);
+    opacity: 1;
+}
+
+.compact-action-menu-divider {
+    height: 1px;
+    margin: 4px 4px;
+    background: var(--border-color, rgba(var(--neutral-rgb), 0.2));
+}
+
+/* Popover Content Styling */
+.popover-meta .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1;
+}
+
+.popover-meta .meta-dot {
+    opacity: 0.3;
+    font-size: var(--font-size-2xs);
+}
+
+/* Force icon sizes in popover header */
+.popover-meta .meta-row svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0.8;
+}
+
+.popover-meta .meta-row span {
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.popover-divider {
+    height: 1px;
+    background: var(--border-color, rgba(var(--shadow-rgb), 0.1));
+    margin: 4px 0 8px 0;
+    opacity: 1;
+}
+
+/* Hide divider in modern theme as requested */
+
+.compact-popover-portal .popover-divider {
+    display: none;
+}
+
+.popover-content {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: var(--font-main);
+}
+
+/* Content Preview: by default, full width with only 8px edge padding */
+.history-item.compact .content-preview {
+    font-size: var(--clipboard-item-font-size);
+    line-height: 1.3;
+    margin-top: 0;
+    margin-bottom: 0;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    max-height: 40px;
+    min-height: 20px;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    justify-content: flex-start;
+    overflow: hidden;
+    padding-right: var(--compact-preview-reserve);
+    box-sizing: border-box;
+}
+
+/* Room kept free on the right for what floats there: the time slot (56px),
+   tags (120px) or both (168px). States only set the variable, so an editing
+   state can still override the padding with a plain selector. */
+.history-item.compact {
+    --compact-preview-reserve: 8px;
+}
+
+body.compact-show-time .history-item.compact,
+html.compact-show-time .history-item.compact {
+    --compact-preview-reserve: 56px;
+}
+
+.history-item.compact:has(.item-tags-container) {
+    --compact-preview-reserve: 120px;
+}
+
+body.compact-show-time .history-item.compact:has(.item-tags-container),
+html.compact-show-time .history-item.compact:has(.item-tags-container) {
+    --compact-preview-reserve: 168px;
+}
+
+/* Allow full height for media/file cards in compact mode */
+.history-item.compact .content-preview:has(.video-thumbnail-card),
+.history-item.compact .content-preview:has(.file-thumbnail-card),
+.history-item.compact .content-preview:has(.image-preview) {
+    max-height: none;
+
+    -webkit-box-orient: unset;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    display: block;
+    overflow: visible;
+}
+
+.history-item.compact .content-preview.rich-text {
+    display: block;
+    -webkit-box-orient: unset;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    max-height: 64px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* Reduced padding for sensitive blur in compact mode to save height */
+.history-item.compact .content-preview.sensitive-blur {
+    padding: 2px var(--compact-preview-reserve) 2px 4px;
+}
+
+/* Special Content - File & Video Thumbnails in Compact Mode */
+.history-item.compact .file-thumbnail-card,
+.history-item.compact .video-thumbnail-card {
+    border: none;
+    background: transparent;
+    padding: 0 4px;
+    gap: 8px;
+    min-height: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+}
+
+/* Compact mode - make file icon smaller */
+.history-item.compact .file-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: var(--compact-media-radius);
+}
+
+/* Compact mode - make video thumbnail smaller */
+.history-item.compact .video-thumbnail-wrapper {
+    width: 48px;
+    height: 32px;
+    min-width: 48px;
+    border-radius: var(--compact-media-radius);
+}
+
+/* Compact mode - file info styling */
+.history-item.compact .file-name {
+    font-size: calc(var(--clipboard-item-font-size) - 1px);
+    font-weight: 500;
+}
+
+/* Hide file path in compact mode */
+.history-item.compact .file-hint {
+    display: none;
+}
+
+.history-item.compact .file-icon-wrapper svg {
+    width: 20px;
+    height: 20px;
+}
+
+.history-item.compact .file-icon-image {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+}
+
+/* Pinned Indicator - Compact Mode (matches card corner curve exactly) */
+.compact-pinned-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-color);
+    z-index: 10;
+    pointer-events: none;
+    border-radius: var(--compact-card-radius) 0 0 var(--compact-card-radius);
+}
+
+.compact-pinned-indicator svg {
+    display: none;
+}
+
+.history-item.compact .rich-text-snapshot-viewport {
+    border-radius: var(--compact-media-radius);
+}
+
+.history-item.compact .color-code-swatch {
+    border-radius: var(--compact-media-radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .history-item.compact .item-actions .btn-icon {
+        transition: none;
+    }
+}

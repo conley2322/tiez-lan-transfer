@@ -1,0 +1,866 @@
+/* 设置 (window=settings) — the window behind the tray menu's 「设置…」.
+   Same tokens as the clipboard panel, a roomier layout: 960×640, sidebar plus a
+   scrolling column, and nothing here has to survive the compact theme. */
+
+/* ── shell ──────────────────────────────────────────────────── */
+
+html.window-settings,
+html.window-settings body,
+html.window-settings #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.lan-settings {
+  display: grid;
+  grid-template-columns: 184px 1fr;
+  height: 100%;
+  background: var(--bg-window);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: var(--font-size-base);
+}
+
+.lan-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--line-soft);
+  background: var(--bg-panel);
+  overflow-y: auto;
+}
+
+.lan-side-group {
+  padding: 4px 8px 6px;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.04em;
+}
+
+.lan-side-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.lan-side-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+.lan-side-item.is-on {
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.lan-side-item svg {
+  flex: none;
+}
+
+.lan-content {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+}
+
+.lan-page-title {
+  margin: 0 0 12px;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.lan-page-note {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.lan-page-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+/* ── cards & rows ───────────────────────────────────────────── */
+
+.lan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-xs);
+}
+
+.lan-card.is-note {
+  background: var(--bg-element);
+}
+
+.lan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lan-card-title {
+  margin: 0;
+  padding-bottom: 8px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.lan-card-head .lan-card-title {
+  padding-bottom: 0;
+}
+
+.lan-card-sub {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.lan-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lan-note-body {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.lan-note-body:last-child {
+  margin-bottom: 0;
+}
+
+.lan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.lan-row:last-child {
+  border-bottom: none;
+}
+
+.lan-row.is-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.lan-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lan-row-name {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.lan-row-hint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.lan-row-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.lan-row.is-stacked .lan-row-control {
+  width: 100%;
+}
+
+.lan-row-warning {
+  margin: 0;
+  padding: 4px 0;
+  color: var(--status-warning);
+  font-size: var(--font-size-xs);
+}
+
+/* ── controls ───────────────────────────────────────────────── */
+
+.lan-switch {
+  position: relative;
+  flex: none;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  padding: 0;
+  border: var(--switch-track-border);
+  border-radius: var(--switch-track-radius);
+  background: var(--switch-track-background);
+  box-shadow: var(--switch-track-shadow);
+  cursor: pointer;
+  transition: background var(--duration-base) ease, border-color var(--duration-base) ease;
+}
+
+.lan-switch.is-on {
+  background: var(--switch-track-active-background);
+  border-color: var(--switch-track-active-border-color);
+}
+
+.lan-switch:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.lan-switch-knob {
+  position: absolute;
+  top: var(--switch-thumb-offset);
+  left: var(--switch-thumb-offset);
+  width: var(--switch-thumb-size);
+  height: var(--switch-thumb-size);
+  border: var(--switch-thumb-border);
+  border-radius: var(--radius-pill);
+  background: var(--switch-thumb-background);
+  box-shadow: var(--switch-thumb-shadow);
+  transition: transform var(--duration-base) ease;
+}
+
+.lan-switch.is-on .lan-switch-knob {
+  transform: translateX(var(--switch-thumb-translate));
+}
+
+.lan-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: var(--button-border);
+  border-radius: var(--button-radius);
+  background: var(--bg-button);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  box-shadow: var(--button-shadow);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.lan-button:hover:not(:disabled) {
+  border-color: var(--button-hover-border-color);
+  box-shadow: var(--button-hover-shadow);
+}
+
+.lan-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+.lan-button.is-primary {
+  background: var(--button-active-filled-background);
+  border-color: var(--button-active-filled-border-color);
+  color: var(--button-active-filled-color);
+}
+
+.lan-button.is-danger {
+  color: var(--status-danger);
+  border-color: color-mix(in srgb, var(--status-danger) 45%, var(--border-color));
+}
+
+.lan-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--bg-input);
+}
+
+.lan-segment-item {
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.lan-segment-item.is-on {
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.lan-select,
+.lan-input {
+  padding: 4px 8px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.lan-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.lan-select:focus-visible,
+.lan-input:focus-visible,
+.lan-code:focus-visible {
+  outline: none;
+  border-color: var(--input-focus-border-color);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.lan-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.lan-range {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent-color);
+}
+
+.lan-range-value {
+  flex: none;
+  min-width: 40px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: right;
+}
+
+.lan-pill {
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-element);
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  white-space: nowrap;
+}
+
+.lan-pill.is-accent {
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.lan-pill.is-ok {
+  background: color-mix(in srgb, var(--status-success) 14%, transparent);
+  color: var(--status-success);
+}
+
+.lan-pill.is-warn {
+  background: color-mix(in srgb, var(--status-warning) 16%, transparent);
+  color: var(--status-warning);
+}
+
+.lan-pill.is-muted {
+  color: var(--text-muted);
+}
+
+.lan-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--avatar-tone-1);
+  color: var(--on-accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.lan-avatar.is-small {
+  width: 20px;
+  height: 20px;
+  font-size: var(--font-size-2xs);
+}
+
+.lan-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.lan-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--text-muted);
+}
+
+.lan-status.is-on {
+  color: var(--status-success);
+}
+
+.lan-status.is-on i {
+  background: var(--status-success);
+}
+
+.lan-star {
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lan-star.is-on {
+  color: var(--status-warning);
+}
+
+.lan-colors {
+  display: flex;
+  gap: 6px;
+}
+
+.lan-color {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.lan-color.is-on {
+  border-color: var(--text-primary);
+}
+
+.lan-value {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.lan-value-mono {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+/* ── 设备与用户 ─────────────────────────────────────────────── */
+
+.lan-peer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.lan-peer:last-child {
+  border-bottom: none;
+}
+
+.lan-peer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lan-peer-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  min-width: 0;
+}
+
+.lan-peer-meta {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.lan-peer-menu {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.lan-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease;
+}
+
+.lan-icon-button:hover {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+}
+
+.lan-menu {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  min-width: 128px;
+  padding: 4px;
+  border: var(--menu-border);
+  border-radius: var(--menu-radius);
+  background: var(--menu-background);
+  box-shadow: var(--menu-shadow);
+}
+
+.lan-menu button {
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lan-menu button:hover:not(:disabled) {
+  background: var(--menu-item-hover-background);
+  color: var(--menu-item-hover-color);
+}
+
+.lan-menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.lan-menu button.is-danger {
+  color: var(--status-danger);
+}
+
+.lan-code-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-element);
+}
+
+.lan-code-title {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.lan-code {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  resize: none;
+}
+
+.lan-code-hint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.lan-inline-result {
+  margin: 8px 0 0;
+  color: var(--accent-color);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.lan-empty {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.lan-nearby {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.lan-nearby-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--font-size-xs);
+}
+
+.lan-nearby-row:last-child {
+  border-bottom: none;
+}
+
+.lan-nearby-name {
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lan-nearby-addr {
+  flex: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.lan-request {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.lan-request:last-child {
+  border-bottom: none;
+}
+
+.lan-request-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lan-request-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.lan-word {
+  margin: 0 4px;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.lan-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-element);
+}
+
+.lan-editor .lan-row {
+  border-bottom: none;
+}
+
+.lan-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+/* ── 连接自检 ───────────────────────────────────────────────── */
+
+.lan-selfcheck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lan-selfcheck-hint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.lan-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0;
+}
+
+.lan-check {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: var(--font-size-xs);
+}
+
+.lan-check-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--status-danger);
+  transform: translateY(-1px); /* design-ok: optical alignment with the text baseline */
+}
+
+.lan-check-dot.is-ok {
+  background: var(--status-success);
+}
+
+.lan-check-key {
+  flex: none;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.lan-check-detail {
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── 文件传输 / 关于 ────────────────────────────────────────── */
+
+.lan-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.lan-path {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lan-about-head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.lan-about-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+/* ── 传输记录 ───────────────────────────────────────────────── */
+
+.lan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.lan-table th,
+.lan-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.lan-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lan-table tbody tr:last-child > td {
+  border-bottom: none;
+}
+
+.lan-table td {
+  color: var(--text-secondary);
+}
+
+.lan-table .is-size {
+  width: 88px;
+  white-space: nowrap;
+}
+
+.lan-table .is-action {
+  width: 72px;
+  text-align: right;
+}
+
+.lan-table .is-file {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.lan-state {
+  color: var(--status-danger);
+  white-space: nowrap;
+}
+
+.lan-state.is-ok {
+  color: var(--status-success);
+}

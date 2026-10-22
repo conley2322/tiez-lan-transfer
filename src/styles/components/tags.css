@@ -1,0 +1,317 @@
+/* --- Base Layout --- */
+.tags-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: var(--z-dropdown);
+    display: block;
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    max-height: min(240px, 45vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    margin-top: 2px;
+    padding: 6px 8px;
+    background: var(--popover-background);
+    border: var(--tags-border);
+    border-radius: var(--tags-radius);
+    box-shadow: var(--tags-shadow);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+    box-sizing: border-box;
+}
+
+/* Attached tag picker: input + dropdown read as one control */
+.search-input.dropdown-open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.search-container:has(.search-input.dropdown-open) .tags-dropdown {
+    margin-top: 0;
+    border-top: none;
+}
+
+.tags-dropdown .tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--layout-tag-list-gap);
+    margin-top: 2px;
+    padding-top: 0;
+}
+
+.item-tags-container.overlay {
+    margin-top: 0;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: var(--layout-tag-chip-padding);
+    font-size: var(--clipboard-tag-font-size);
+    font-weight: var(--tag-chip-font-weight);
+    font-family: var(--tag-chip-font-family);
+    text-transform: var(--tag-chip-text-transform);
+    letter-spacing: var(--tag-chip-letter-spacing);
+    line-height: 1.15;
+    color: var(--on-accent);
+    text-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.4);
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    border: var(--tag-chip-border);
+    border-radius: var(--tag-chip-radius);
+    box-shadow: var(--tag-chip-shadow);
+    transition: filter var(--duration-fast) ease, opacity var(--duration-fast) ease;
+}
+
+.tag-chip:hover {
+    transform: var(--tag-chip-hover-transform);
+    box-shadow: var(--tag-chip-hover-shadow);
+    filter: brightness(1.06);
+}
+
+.tag-chip:active {
+    transform: var(--tag-chip-active-transform);
+    box-shadow: var(--tag-chip-active-shadow);
+    filter: brightness(0.96);
+}
+
+/* Inline tag editor: input + floating suggestion list (same column width) */
+.tag-edit-anchor {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    vertical-align: middle;
+    width: min(128px, 40vw);
+    min-width: 88px;
+    box-sizing: border-box;
+}
+
+.tag-edit-input-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.tag-edit-input-row .tag-input {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.tag-edit-input-row .btn-icon {
+    flex-shrink: 0;
+}
+
+.tag-edit-suggestions-popover {
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 100%;
+    top: calc(100% + 5px);
+    bottom: auto;
+    max-height: min(11rem, 38vh);
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+    border-radius: var(--tags-radius);
+    background: var(--popover-background);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+    border: var(--tags-border);
+    box-shadow: var(--tags-shadow);
+    z-index: var(--z-popover);
+    box-sizing: border-box;
+}
+
+.tag-suggest-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+    padding: 2px 4px;
+    border: none;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    line-height: 1.2;
+    min-height: 0;
+}
+
+.tag-suggest-pill {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    font-size: var(--font-size-2xs);
+    font-weight: 700;
+    line-height: 1.25;
+    vertical-align: middle;
+}
+
+.tag-suggest-item:hover {
+    background: var(--bg-hover, rgba(var(--neutral-rgb), 0.14));
+}
+
+.tag-suggest-item--active,
+.tag-suggest-item--active:hover {
+    background: var(--accent-soft);
+}
+
+.tag-suggest-item:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -1px;
+}
+
+.history-item:has(.item-tags-container.tag-edit-active) {
+    z-index: 48;
+}
+
+/* --- Unified tag identity ---
+   Every visible tag uses its assigned color as the surface and a readable
+   foreground from the same hue family. Theme-specific rules may still tune
+   radius, border, padding, and hover motion, but must not replace the tag
+   surface with a neutral fill or a color marker. */
+.tag-chip {
+  background: var(--tag-color, var(--accent-color));
+  color: var(--tag-text-color, var(--text-primary));
+  text-shadow: none;
+}
+
+.tag-chip::before,
+.tag-chip::after {
+  content: none;
+  display: none;
+}
+
+body[class*="theme-"] .tag-chip,
+body[class*="theme-"].light-mode .tag-chip,
+body[class*="theme-"].dark-mode .tag-chip {
+  background: var(--tag-color, var(--accent-color));
+  color: var(--tag-text-color, var(--text-primary));
+}
+
+body[class*="theme-"] .tags-dropdown .tag-chip,
+body[class*="theme-"].light-mode .tags-dropdown .tag-chip,
+body[class*="theme-"].dark-mode .tags-dropdown .tag-chip {
+  background: var(--tag-color, var(--accent-color));
+  color: var(--tag-text-color, var(--text-primary));
+}
+
+body[class*="theme-"] .tag-chip:hover,
+body[class*="theme-"].light-mode .tag-chip:hover,
+body[class*="theme-"].dark-mode .tag-chip:hover,
+body[class*="theme-"] .tag-chip:active,
+body[class*="theme-"].light-mode .tag-chip:active,
+body[class*="theme-"].dark-mode .tag-chip:active {
+  background: var(--tag-color, var(--accent-color));
+  color: var(--tag-text-color, var(--text-primary));
+  filter: brightness(1.06);
+}
+
+.tags-dropdown .tag-chip,
+body[class*="theme-"] .tags-dropdown .tag-chip,
+body[class*="theme-"].light-mode .tags-dropdown .tag-chip,
+body[class*="theme-"].dark-mode .tags-dropdown .tag-chip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  text-shadow: none;
+  box-shadow: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transform: none;
+  filter: none;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.tags-dropdown .tag-chip:hover,
+body[class*="theme-"] .tags-dropdown .tag-chip:hover,
+body[class*="theme-"].light-mode .tags-dropdown .tag-chip:hover,
+body[class*="theme-"].dark-mode .tags-dropdown .tag-chip:hover,
+.tags-dropdown .tag-chip:active,
+body[class*="theme-"] .tags-dropdown .tag-chip:active,
+body[class*="theme-"].light-mode .tags-dropdown .tag-chip:active,
+body[class*="theme-"].dark-mode .tags-dropdown .tag-chip:active {
+  background: var(--bg-hover, rgba(var(--neutral-rgb), 0.08));
+  color: var(--text-primary);
+  border-color: transparent;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.tags-dropdown .tag-color-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(var(--shadow-rgb), 0.12);
+}
+
+.dark-mode .tags-dropdown .tag-color-dot,
+body.dark-mode .tags-dropdown .tag-color-dot {
+  box-shadow: 0 0 0 1px rgba(var(--highlight-rgb), 0.2);
+}
+
+.tags-dropdown .tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+body[class*="theme-"] .tag-chip::before,
+body[class*="theme-"] .tag-chip::after,
+body[class*="theme-"].light-mode .tag-chip::before,
+body[class*="theme-"].light-mode .tag-chip::after,
+body[class*="theme-"].dark-mode .tag-chip::before,
+body[class*="theme-"].dark-mode .tag-chip::after {
+  content: none;
+  display: none;
+}
+
+/* --- Global Fix for Search Input Accessibility in Dark Mode --- */
+:root.dark-mode .search-input {
+    color: var(--text-primary);
+}
+
+:root.dark-mode .search-input::placeholder {
+    color: rgba(var(--highlight-rgb), 0.5);
+}

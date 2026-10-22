@@ -1,0 +1,55 @@
+/* Utilities */
+.sensitive-blur{
+  border-radius: 0;
+  padding: 4px;
+}
+
+/* Localized help is split into short lines without embedding HTML in copy. */
+.settings-group .hint,
+.settings-group p,
+.settings-notice,
+.modal-panel p,
+.confirm-dialog-message,
+.clipboard-import-app-summary,
+.clipboard-import-progress > strong,
+.clipboard-import-result > strong,
+.toast-text,
+.emoji-fav-hint,
+.error-boundary-body {
+  white-space: pre-line;
+}
+
+
+/* Fallback shown by ErrorBoundary when the UI fails to render. */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  text-align: center;
+  color: var(--text-primary);
+  background: var(--bg-window);
+}
+
+.error-boundary-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.error-boundary-body {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.error-boundary-detail {
+  max-width: 100%;
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}

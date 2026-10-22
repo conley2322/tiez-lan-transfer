@@ -1,0 +1,64 @@
+/*
+ * Host-level rich-text preview tokens.
+ *
+ * HtmlContent renders the captured document inside a ShadowRoot, so content
+ * typography belongs in HtmlContent.tsx. Keep this file limited to inheritable
+ * tokens and outer snapshot framing to avoid two style sources drifting apart.
+ */
+.rich-text-preview {
+  --rich-preview-line-height: 1.5;
+  --rich-preview-block-gap: 0.5em;
+  --rich-preview-image-max-height: 96px;
+  --rich-preview-radius: 6px;
+
+  display: block;
+  min-width: 0;
+  margin-top: 2px;
+  color: var(--text-primary);
+  color-scheme: light dark;
+  font-family: var(--font-main);
+  font-size: var(--clipboard-item-font-size);
+  line-height: var(--rich-preview-line-height);
+  overflow-wrap: anywhere;
+}
+
+/* Hover preview has room to show document media at a useful size. */
+body.compact-preview .rich-text-preview {
+  --rich-preview-block-gap: 0.62em;
+  --rich-preview-image-max-height: min(
+    280px,
+    calc(var(--preview-max-height, 560px) - 112px)
+  );
+
+  margin: 0;
+}
+
+/*
+ * Snapshot thumbnails are clipped from the top at readable scale. Previously
+ * max-height was applied directly to the image, shrinking an entire document
+ * (and its text) into a 40/64px strip.
+ */
+.rich-text-snapshot-viewport {
+  width: 100%;
+  max-height: 64px;
+  overflow: hidden;
+  border-radius: var(--rich-preview-radius, 6px);
+}
+
+.history-item.compact .rich-text-snapshot-viewport {
+  max-height: 40px;
+}
+
+.rich-text-snapshot-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  margin: 0;
+  border-radius: inherit;
+  object-position: top left;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

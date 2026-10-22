@@ -1,0 +1,301 @@
+/* Frosted glass is the system's own window material. This tint adds only
+   what 「表面不透明度」 asks for: none at 0, up to 40% white (black in dark
+   mode) at 100, so nothing greys the material by default. */
+:root.theme-acrylic,
+body.theme-acrylic {
+  background-color: transparent;
+  --acrylic-tint-rgb: 255, 255, 255;
+  --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+  --bg-window: rgba(var(--acrylic-tint-rgb), var(--acrylic-tint-alpha));
+  --bg-content: transparent;
+  --bg-toolbar: transparent;
+  --bg-panel: rgba(255, 255, 255, 0.24);
+  --bg-input: rgba(255, 255, 255, 0.58);
+  --bg-element: rgba(255, 255, 255, 0.14);
+  --bg-button: rgba(255, 255, 255, 0.46);
+  --layout-item-background: rgba(255, 255, 255, 0.42);
+
+  --text-primary: #162234;
+  --text-secondary: #546378;
+  --text-muted: #666e7d;
+
+  --accent-color: #4f7dff;
+  --accent-color-rgb: 79, 125, 255;
+  --accent-hover: #3f6ce9;
+
+  --line-soft: rgba(255, 255, 255, 0.34);
+  --line-strong: rgba(255, 255, 255, 0.5);
+  --shadow-xs: 0 4px 10px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 10px 22px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 18px 36px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 24px 54px rgba(15, 23, 42, 0.16);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+
+  --shell-background: var(--bg-window);
+  --shell-border: 1px solid rgba(255, 255, 255, 0.32);
+  --shell-shadow: 0 10px 38px rgba(0, 0, 0, 0.16);
+  --shell-radius: 10px;
+  /* CSS blurs in-document backdrops; OS vibrancy handles other windows. */
+  --shell-backdrop-filter: blur(24px) saturate(125%);
+
+  --toolbar-border: 1px solid rgba(255, 255, 255, 0.24);
+
+  --input-border: 1px solid rgba(22, 34, 52, 0.18);
+  --input-radius: 12px;
+  --input-shadow: none;
+  --input-focus-shadow: 0 0 0 3px rgba(79, 125, 255, 0.14);
+
+  --button-border: 1px solid rgba(22, 34, 52, 0.14);
+  --button-radius: 10px;
+  --button-shadow: none;
+  --button-hover-shadow: none;
+  --button-active-shadow: none;
+  --button-active-filled-shadow: none;
+  --button-hover-transform: none;
+  --dialog-button-shadow: none;
+  --dialog-button-hover-shadow: none;
+  --dialog-button-active-shadow: none;
+  --keycap-shadow: none;
+  --keycap-active-shadow: none;
+  --compact-action-backdrop-filter: none;
+  --popover-background: rgba(255, 255, 255, 0.94);
+  --modal-background: rgba(255, 255, 255, 0.96);
+  --toast-background: rgba(255, 255, 255, 0.94);
+  --menu-background: rgba(255, 255, 255, 0.94);
+  --popover-backdrop-filter: blur(28px) saturate(180%);
+
+  --card-border: 1px solid rgba(255, 255, 255, 0.26);
+  --card-radius: 14px;
+  --card-shadow: none;
+  --card-hover-shadow: none;
+  --card-hover-transform: none;
+  --card-selected-background: rgba(255, 255, 255, 0.3);
+  --card-selected-border-color: rgba(255, 255, 255, 0.52);
+  --card-selected-shadow: none;
+
+  --panel-border: 1px solid rgba(255, 255, 255, 0.28);
+  --panel-radius: 14px;
+  --panel-shadow: none;
+  --panel-divider-color: rgba(0, 0, 0, 0.05);
+
+  --data-panel-border: 1px solid rgba(255, 255, 255, 0.3);
+  --data-panel-shadow: none;
+
+  --segment-active-background: rgba(255, 255, 255, 0.8);
+  --segment-active-shadow: none;
+
+  --menu-border: 1px solid rgba(255, 255, 255, 0.28);
+  --menu-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
+
+  --scrollbar-size: 8px;
+  --scrollbar-size-thin: 4px;
+  --scrollbar-radius: 999px;
+  --scrollbar-thumb-color: rgba(96, 113, 136, 0.55);
+  --scrollbar-thumb-hover-color: rgba(79, 125, 255, 0.72);
+  --scrollbar-thumb-border: 2px solid transparent;
+
+}
+
+body.theme-acrylic {
+  position: relative;
+  isolation: isolate;
+}
+
+/* The desktop supplies the colour variation; don't paint a synthetic wash. */
+body.theme-acrylic::before {
+  content: none;
+}
+
+/* Custom images sit inside the shell. Blur only this backdrop layer and
+   overscan it to avoid transparent blur edges; foreground controls stay sharp. */
+body.has-custom-bg.theme-acrylic:not(.compact-preview) #root::after {
+  content: "";
+  position: absolute;
+  inset: -72px;
+  background-image:
+    linear-gradient(var(--bg-window), var(--bg-window)),
+    var(--custom-bg-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--custom-bg-opacity, 0.45);
+  filter: blur(24px) saturate(125%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+body.theme-acrylic #root {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  isolation: isolate;
+  background-clip: padding-box;
+}
+
+body.theme-acrylic #root::before {
+  content: none;
+}
+
+body.theme-acrylic #root > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root.theme-acrylic:not(.light-mode),
+  body.theme-acrylic:not(.light-mode) {
+    --acrylic-tint-rgb: 0, 0, 0;
+    --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+    --bg-panel: rgba(20, 24, 30, 0.24);
+    --bg-input: rgba(255, 255, 255, 0.16);
+    --bg-element: rgba(20, 24, 30, 0.14);
+    --bg-button: rgba(255, 255, 255, 0.12);
+    --layout-item-background: rgba(255, 255, 255, 0.08);
+    --input-border: 1px solid rgba(255, 255, 255, 0.24);
+    --button-border: 1px solid rgba(255, 255, 255, 0.18);
+    --segment-active-background: rgba(255, 255, 255, 0.16);
+
+    --text-primary: #e8e8e8;
+    --text-secondary: #b8b8b8;
+    --text-muted: #a8a8a8;
+
+    --line-soft: rgba(255, 255, 255, 0.14);
+    --line-strong: rgba(255, 255, 255, 0.2);
+    --shadow-xs: 0 4px 12px rgba(0, 0, 0, 0.18);
+    --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.22);
+    --shadow-md: 0 18px 36px rgba(0, 0, 0, 0.28);
+    --shadow-lg: 0 22px 44px rgba(0, 0, 0, 0.32);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    --shell-border: 1px solid rgba(255, 255, 255, 0.12);
+    --toolbar-border: 1px solid rgba(255, 255, 255, 0.08);
+    --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+    --panel-divider-color: rgba(255, 255, 255, 0.1);
+    --menu-border: 1px solid rgba(255, 255, 255, 0.1);
+    --card-border: 1px solid rgba(255, 255, 255, 0.14);
+    --card-hover-border-color: rgba(255, 255, 255, 0.22);
+    --card-selected-background: rgba(255, 255, 255, 0.08);
+    --card-selected-border-color: rgba(255, 255, 255, 0.18);
+    --card-selected-shadow: none;
+    --data-panel-border: 1px solid rgba(255, 255, 255, 0.14);
+    --data-panel-hover-background: rgba(255, 255, 255, 0.08);
+
+    --popover-background: rgba(26, 31, 40, 0.95);
+    --modal-background: rgba(24, 28, 36, 0.96);
+    --toast-background: rgba(26, 31, 40, 0.95);
+    --menu-background: rgba(26, 31, 40, 0.95);
+    --popover-backdrop-filter: blur(28px) saturate(180%);
+  }
+
+}
+
+:root.dark-mode.theme-acrylic,
+body.dark-mode.theme-acrylic {
+  --acrylic-tint-rgb: 0, 0, 0;
+  --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+  --bg-panel: rgba(20, 24, 30, 0.24);
+  --bg-input: rgba(255, 255, 255, 0.16);
+  --bg-element: rgba(20, 24, 30, 0.14);
+  --bg-button: rgba(255, 255, 255, 0.12);
+  --layout-item-background: rgba(255, 255, 255, 0.08);
+  --input-border: 1px solid rgba(255, 255, 255, 0.24);
+  --button-border: 1px solid rgba(255, 255, 255, 0.18);
+  --segment-active-background: rgba(255, 255, 255, 0.16);
+
+  --text-primary: #e8e8e8;
+  --text-secondary: #b8b8b8;
+  --text-muted: #a8a8a8;
+
+  --line-soft: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --shadow-xs: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 18px 36px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 22px 44px rgba(0, 0, 0, 0.32);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  --shell-border: 1px solid rgba(255, 255, 255, 0.12);
+  --toolbar-border: 1px solid rgba(255, 255, 255, 0.08);
+  --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+  --panel-divider-color: rgba(255, 255, 255, 0.1);
+  --menu-border: 1px solid rgba(255, 255, 255, 0.1);
+  --card-border: 1px solid rgba(255, 255, 255, 0.14);
+  --card-hover-border-color: rgba(255, 255, 255, 0.22);
+  --card-selected-background: rgba(255, 255, 255, 0.08);
+  --card-selected-border-color: rgba(255, 255, 255, 0.18);
+  --card-selected-shadow: none;
+  --data-panel-border: 1px solid rgba(255, 255, 255, 0.14);
+  --data-panel-hover-background: rgba(255, 255, 255, 0.08);
+
+  --popover-background: rgba(26, 31, 40, 0.95);
+  --modal-background: rgba(24, 28, 36, 0.96);
+  --toast-background: rgba(26, 31, 40, 0.95);
+  --menu-background: rgba(26, 31, 40, 0.95);
+  --popover-backdrop-filter: blur(28px) saturate(180%);
+}
+
+/* macOS glass: the same tint over the system material. */
+html.platform-macos.theme-acrylic,
+html.platform-macos body.theme-acrylic {
+  --acrylic-tint-rgb: 255, 255, 255;
+  --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+  --bg-window: rgba(var(--acrylic-tint-rgb), var(--acrylic-tint-alpha));
+  --shell-background: var(--bg-window);
+  --shell-backdrop-filter: blur(24px) saturate(140%);
+  --native-glass-content-background: rgba(246, 246, 248, 0.85);
+}
+
+/* In the split layout, expose glass through navigation and keep the reading
+   surface subtly frosted. */
+html.platform-macos body.theme-acrylic .tag-manager-body.is-split .tag-manager-filter {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.platform-macos body.theme-acrylic .tag-manager-body.is-split .tag-manager-editor {
+  background: var(--native-glass-content-background);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.platform-macos body.theme-acrylic:not(.light-mode) {
+    --acrylic-tint-rgb: 0, 0, 0;
+    --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+    --bg-window: rgba(var(--acrylic-tint-rgb), var(--acrylic-tint-alpha));
+    --shell-background: var(--bg-window);
+    --shell-backdrop-filter: blur(24px) saturate(140%);
+    --native-glass-content-background: rgba(28, 28, 30, 0.85);
+  }
+}
+
+html.platform-macos body.dark-mode.theme-acrylic {
+  --acrylic-tint-rgb: 0, 0, 0;
+  --acrylic-tint-alpha: clamp(0, calc(0.2 * var(--surface-opacity-scale)), 0.4);
+  --bg-window: rgba(var(--acrylic-tint-rgb), var(--acrylic-tint-alpha));
+  --shell-background: var(--bg-window);
+  --shell-backdrop-filter: blur(24px) saturate(140%);
+  --native-glass-content-background: rgba(28, 28, 30, 0.85);
+}
+
+/* Cards on top of acrylic glass retain distinct frosted tile appearance */
+.theme-acrylic .history-item {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Keep saved custom backgrounds available to other themes, but don't mix an
+   image backdrop with the native desktop material in this theme. */
+html.platform-macos body.has-custom-bg.theme-acrylic:not(.compact-preview) #root::after {
+  content: none;
+}
+
+body.compact-preview.theme-acrylic #root,
+body.theme-acrylic.compact-preview #root,
+body.dark-mode.compact-preview.theme-acrylic #root {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

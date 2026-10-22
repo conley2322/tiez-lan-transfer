@@ -1,0 +1,17 @@
+{
+  "name": "tiez-e2e",
+  "version": "1.0.0",
+  "description": "TieZ UI end-to-end tests against the browser preview harness (Tauri mocked)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "e2e run --target clipboard-app",
+    "test:headed": "e2e run --headed --target clipboard-app",
+    "harness": "node ../node_modules/vite/bin/vite.js --config harness/vite.config.mjs",
+    "install:browser": "e2e-web install chromium"
+  },
+  "dependencies": {
+    "@e2e-dev/web": "^0.14.0",
+    "e2e": "^0.19.0"
+  }
+}

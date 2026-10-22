@@ -1,0 +1,426 @@
+/*
+ * Receipt Theme — thermal printer ticket
+ * Narrow rows, monospace, dashed tear lines, faded ink.
+ */
+/* Component adjustments for this theme, kept ahead of the theme's own rules
+   (they used to sit in the component stylesheets). */
+
+/* ---- From components/ai.css ---- */
+
+.theme-receipt .ai-action-btn {
+  border: 1px solid var(--border-dark);
+  border-radius: 0;
+}
+
+/* ---- From components/file-transfer.css ---- */
+
+.theme-receipt .wt-chat-view {
+  --im-canvas: var(--bg-window);
+  --im-canvas-shade: color-mix(in srgb, var(--bg-window) 88%, transparent);
+  --im-incoming: var(--bg-element);
+  --im-bubble-border: var(--line-soft);
+}
+
+
+:root.theme-receipt,
+body.theme-receipt {
+  color-scheme: light;
+
+  --font-main: "Courier New", Courier, "SF Mono", ui-monospace, monospace;
+  --font-mono: var(--font-main);
+  --font-size-md: 13px;
+
+  --radius-window: 4px;
+  --radius-panel: 2px;
+  --radius-card: 0;
+  --radius-control: 0;
+  --radius-pill: 0;
+
+  --spacing-md: 12px;
+  --spacing-sm: 6px;
+
+  --shell-backdrop-filter: none;
+  /* Preserve the receipt's sharp internal rhythm while giving the desktop
+     window a reliably visible, clipped outer corner. */
+  --shell-radius: 8px;
+
+  --content-font-family: var(--font-main);
+  --content-line-height: 1.35;
+  --empty-state-font-family: var(--font-main);
+
+  --title-font-family: var(--font-main);
+  --title-font-weight: 700;
+  --title-font-size: 12px;
+  --title-letter-spacing: 0.12em;
+  --title-transform: uppercase;
+  --title-color: #2a2a2a;
+
+  --meta-text-transform: uppercase;
+  --meta-letter-spacing: 0.06em;
+
+  --layout-header-padding-y: 6px;
+  --layout-header-inner-x: 16px;
+  --layout-header-inner-gap: 4px;
+  --layout-header-actions-gap: 3px;
+  --layout-search-margin-top: 0;
+  --layout-search-padding-x: 16px;
+  --layout-search-input-padding: 6px 8px 6px 26px;
+  --layout-search-input-font-size: 11px;
+  --layout-search-icon-left: 8px;
+  --layout-main-padding-y: 4px;
+  --layout-main-padding-bottom: 12px;
+  --layout-main-gap: 0;
+  --layout-list-padding-x: 16px;
+  --layout-item-margin-x: 0;
+  --layout-item-margin-bottom: 0;
+  /* The shared meta toolbar is optically lifted by 6px. Preserve the
+     receipt rhythm while keeping a stable inset above the controls. */
+  --layout-item-padding: 10px 4px 8px 4px;
+  --layout-item-background: transparent;
+  --layout-item-divider: 1px dashed rgba(0, 0, 0, 0.14);
+  --layout-drag-handle-radius: 0;
+  --layout-btn-icon-padding: 4px;
+  --layout-meta-font-size: 10px;
+  --layout-meta-font-weight: 700;
+  --layout-meta-border-bottom: none;
+  --layout-meta-padding-bottom: 2px;
+  --layout-tag-list-gap: 4px;
+  --layout-tag-chip-padding: 0 5px;
+  --tag-chip-font-weight: 700;
+  --tag-chip-font-family: var(--font-main);
+  --tag-chip-text-transform: uppercase;
+  --tag-chip-letter-spacing: 0.04em;
+
+  --rc-bg: #faf8f3;
+  --rc-paper: #fffef9;
+  --rc-ink: #1e1e1e;
+  --rc-ink-fade: #686868;
+  --rc-ink-ghost: #747474;
+  --rc-line: rgba(0, 0, 0, 0.16);
+  --rc-accent: #2a2a2a;
+
+  --bg-body: var(--rc-bg);
+  --bg-window: var(--rc-paper);
+  --bg-content: var(--rc-paper);
+  --bg-toolbar: var(--rc-paper);
+  --bg-panel: var(--rc-paper);
+  --bg-input: #ffffff;
+  --bg-element: transparent;
+  --bg-button: transparent;
+
+  --popover-background: #ffffff;
+  --modal-background: #fffef9;
+  --toast-background: #ffffff;
+  --menu-background: #ffffff;
+  --popover-backdrop-filter: none;
+
+  --text-primary: var(--rc-ink);
+  --text-secondary: var(--rc-ink-fade);
+  --text-muted: var(--rc-ink-ghost);
+
+  --accent-color: var(--rc-accent);
+  --accent-color-rgb: 42, 42, 42;
+  --accent-hover: #000000;
+  --accent-soft: rgba(0, 0, 0, 0.06);
+
+  --line-soft: var(--rc-line);
+  --line-strong: rgba(0, 0, 0, 0.28);
+
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.1);
+  --shadow-inset: none;
+
+  --shell-background: var(--rc-paper);
+  --shell-border: 1px solid rgba(0, 0, 0, 0.12);
+  --shell-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+
+  --toolbar-border: none;
+  --toolbar-shadow: none;
+
+  --input-border: 1px dashed var(--rc-line);
+  --input-radius: 0;
+  --input-shadow: none;
+  --input-focus-border-color: var(--rc-ink);
+  --input-focus-shadow: none;
+  --input-font-weight: 700;
+
+  --button-border: 1px dashed var(--rc-line);
+  --button-radius: 0;
+  --button-shadow: none;
+  --button-hover-shadow: none;
+  --button-hover-transform: none;
+  --button-active-filled-background: #fffef9;
+  --button-active-filled-color: var(--rc-ink);
+  --button-active-filled-border-color: var(--rc-ink);
+  --button-active-filled-shadow: inset 0 0 0 1px var(--rc-ink);
+
+  --segment-active-background: rgba(0, 0, 0, 0.06);
+  --segment-active-color: var(--rc-ink);
+  --segment-active-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+
+  --card-border: none;
+  --card-radius: 0;
+  --compact-card-radius: 0;
+  --compact-media-radius: 0;
+  --card-shadow: none;
+  --card-hover-shadow: none;
+  --card-hover-transform: none;
+  --card-selected-background: rgba(0, 0, 0, 0.05);
+  --card-selected-border-color: var(--rc-ink);
+  --card-selected-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --card-selected-outline: 2px solid var(--card-selected-border-color);
+  --card-selected-outline-offset: -2px;
+
+  --panel-border: 1px dashed var(--rc-line);
+  --panel-radius: 0;
+  --panel-shadow: none;
+  --panel-divider-color: var(--rc-line);
+
+  --tags-border: 1px dashed var(--rc-line);
+  --tags-radius: 0;
+  --tags-shadow: none;
+  --tag-chip-border: 1px dashed rgba(0, 0, 0, 0.2);
+  --tag-chip-radius: 0;
+  --tag-chip-shadow: none;
+  --tag-chip-hover-shadow: none;
+  --tag-chip-hover-transform: none;
+
+  --menu-border: 1px solid rgba(0, 0, 0, 0.15);
+  --menu-radius: 0;
+  --menu-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+
+  --scrollbar-size: 6px;
+  --scrollbar-radius: 0;
+  --scrollbar-thumb-color: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.38);
+}
+
+body.theme-receipt #root {
+  background: var(--rc-paper);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+
+
+
+html.theme-receipt,
+body.theme-receipt {
+  background-color: transparent;
+}
+
+body.theme-receipt .app-container {
+  border-radius: inherit;
+  clip-path: inset(0 round var(--shell-radius));
+  -webkit-clip-path: inset(0 round var(--shell-radius));
+}
+
+:root.dark-mode.theme-receipt,
+body.dark-mode.theme-receipt {
+  color-scheme: dark;
+
+  --rc-bg: #1c1c1c;
+  --rc-paper: #242424;
+  --rc-ink: #e8e8e8;
+  --rc-ink-fade: #a0a0a0;
+  --rc-ink-ghost: #8d8d8d;
+  --rc-line: rgba(255, 255, 255, 0.14);
+  --rc-accent: #e8e8e8;
+
+  /* The light receipt used a literal white input surface. Rebind every
+     recessed/control surface for night mode so settings fields, default-app
+     rows and portalled selectors stay part of the dark ticket. */
+  --bg-input: #1b1b1b;
+  --popover-background: #202020;
+  --modal-background: #242424;
+  --toast-background: #202020;
+  --menu-background: #202020;
+  --popover-backdrop-filter: none;
+  --data-panel-hover-background: #2b2b2b;
+  --title-color: var(--rc-ink);
+
+  --accent-color-rgb: 232, 232, 232;
+  --accent-hover: #ffffff;
+  --accent-soft: rgba(232, 232, 232, 0.08);
+  --on-accent: #1c1c1c;
+  --line-strong: rgba(255, 255, 255, 0.26);
+
+  --layout-item-divider: 1px dashed rgba(255, 255, 255, 0.12);
+
+  --shell-border: 1px solid rgba(255, 255, 255, 0.1);
+  --shell-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --switch-thumb-background: var(--rc-paper);
+  --range-thumb-border: 1px solid rgba(0, 0, 0, 0.55);
+  --button-active-filled-background: #2e2e2e;
+  --button-active-filled-color: #f5f5f5;
+  --button-active-filled-border-color: #f0f0f0;
+  --button-active-filled-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  --segment-active-background: rgba(255, 255, 255, 0.1);
+  --segment-active-color: #f5f5f5;
+  --segment-active-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  --card-selected-background: rgba(255, 255, 255, 0.06);
+  --card-selected-border-color: rgba(255, 255, 255, 0.35);
+  --card-selected-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --card-selected-outline: 2px solid var(--card-selected-border-color);
+  --card-selected-outline-offset: -2px;
+  --tag-chip-border: 1px dashed rgba(255, 255, 255, 0.2);
+  --menu-border: 1px solid rgba(255, 255, 255, 0.15);
+  --menu-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+  --menu-item-hover-color: #1c1c1c;
+  --scrollbar-thumb-color: rgba(255, 255, 255, 0.22);
+  --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.38);
+}
+
+
+
+body.theme-receipt,
+body.theme-receipt .search-input,
+body.theme-receipt .history-item,
+body.theme-receipt .item-meta,
+body.theme-receipt .settings-group {
+  font-family: var(--font-main);
+}
+
+.theme-receipt .history-item.selected {
+  background: var(--card-selected-background);
+  color: var(--text-primary);
+}
+
+.theme-receipt .theme-choice-btn.active,
+.theme-receipt .btn-icon.active {
+  background: var(--button-active-filled-background);
+  color: var(--button-active-filled-color);
+  border: 2px solid var(--button-active-filled-border-color);
+  box-shadow: var(--button-active-filled-shadow);
+}
+
+.theme-receipt .theme-choice-btn.active .theme-choice-title {
+  font-weight: 800;
+}
+
+.theme-receipt .btn-icon {
+  color: var(--rc-ink-fade);
+  border-style: dashed;
+}
+
+.theme-receipt .btn-icon:hover {
+  color: var(--rc-ink);
+}
+
+.theme-receipt .search-input::placeholder {
+  color: var(--rc-ink-ghost);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--font-size-2xs);
+}
+
+/* ===== Tags: search box and tag picker (theme-specific) ===== */
+
+/* --- Receipt: thermal ticket tags & search --- */
+.theme-receipt .search-prompt {
+  display: none;
+}
+
+.theme-receipt .search-container .search-icon {
+  display: none;
+}
+
+.theme-receipt .search-input-row::before {
+  content: "*";
+  position: absolute;
+  left: var(--layout-search-icon-left);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rc-ink, var(--text-primary));
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: var(--layout-search-input-font-size);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.theme-receipt .search-input.dropdown-open {
+  border-bottom: none;
+}
+
+.theme-receipt .tags-dropdown {
+  margin-top: 0;
+  padding: 4px 0;
+  gap: 0;
+  border-top: 1px dashed var(--rc-line, var(--line-soft));
+  border-radius: 0;
+  background: var(--rc-paper, var(--bg-input));
+  box-shadow: none;
+}
+
+.theme-receipt .tags-dropdown .tags-list {
+  flex-direction: column;
+  gap: 0;
+}
+
+.theme-receipt .tags-dropdown .tag-chip {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 4px 8px;
+  justify-content: flex-start;
+  border-bottom: 1px dashed rgba(var(--shadow-rgb), 0.08);
+}
+
+.theme-receipt .tags-dropdown .tag-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--tag-color, var(--accent-color));
+  margin-right: 7px;
+}
+
+.theme-receipt .tag-chip {
+  border-style: dashed;
+  box-shadow: none;
+  filter: none;
+  border-color: rgba(var(--shadow-rgb), 0.16);
+}
+
+.theme-receipt .tags-dropdown .tag-chip {  border: none;
+  border-bottom: 1px dashed rgba(var(--shadow-rgb), 0.08);
+}
+
+.theme-receipt .tag-chip::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--tag-color, var(--accent-color));
+  margin-right: 3px;
+  opacity: 1;
+}
+
+.theme-receipt .tag-chip:hover,
+.theme-receipt .tag-chip:active,
+.theme-receipt .tags-dropdown .tag-chip:hover {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+body.dark-mode.theme-receipt .tag-chip {  border-color: rgba(var(--highlight-rgb), 0.14);
+}
+
+body.dark-mode.theme-receipt .tags-dropdown .tag-chip {
+  border-bottom-color: rgba(var(--highlight-rgb), 0.08);
+}
+
+/* --- Receipt: tighten input + dropdown seam --- */
+.theme-receipt .search-input.dropdown-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}

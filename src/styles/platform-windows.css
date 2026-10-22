@@ -1,0 +1,74 @@
+/*
+ * Windows 11 DWM clips the HWND to the system corner. Fill the client as a
+ * rectangle so the square WebView background is not visible in the four
+ * corners. macOS keeps each theme's --shell-radius.
+ */
+html.platform-windows,
+body.platform-windows {
+  --shell-radius: 0;
+  -webkit-font-smoothing: auto;
+  text-rendering: auto;
+  font-synthesis: none;
+}
+
+html.platform-windows {
+  --font-main: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  /* Match macOS overlay thumb: thin, rounded, no classic Win32 chrome. */
+  --scrollbar-size: 8px;
+  --scrollbar-size-thin: 5px;
+  --scrollbar-radius: 999px;
+  --scrollbar-thumb-border: 2px solid transparent;
+  --scrollbar-overlay-width: 0px;
+}
+
+html.platform-windows,
+body.platform-windows,
+html.platform-windows #root {
+  border-radius: 0;
+}
+
+/* Windows 11 draws the window border itself (DWMWA_BORDER_COLOR in
+   set_theme). A CSS border here sits on the WebView edge and loses its right
+   and bottom sides at fractional display scaling. */
+html.platform-windows #root {
+  border: none;
+}
+
+html.platform-windows .app-container {
+  border-radius: 0;
+  clip-path: none;
+  -webkit-clip-path: none;
+}
+
+/*
+ * Never style ::-webkit-scrollbar on Windows — that forces the classic bar
+ * with up/down arrows. Rely on scrollbar-width / scrollbar-color only so
+ * WebView2 keeps its overlay thumb like macOS.
+ */
+html.platform-windows .virtual-list-wrapper .virtuoso-scroller {
+  width: 100%;
+  margin-right: 0;
+}
+
+/*
+ * Theme faces that render hairline-thin on Windows: Courier New, and
+ * Songti/STSong, which fall back to SimSun there. Keep each theme's character
+ * (monospace, serif Latin) but use faces that hold up under Windows text
+ * rendering, with YaHei UI for Chinese.
+ */
+:root.platform-windows.theme-retro,
+body.platform-windows.theme-retro,
+:root.platform-windows.theme-receipt,
+body.platform-windows.theme-receipt {
+  --font-main: "Cascadia Mono", Consolas, "Microsoft YaHei UI", "Microsoft YaHei", monospace;
+}
+
+:root.platform-windows.theme-paper,
+body.platform-windows.theme-paper {
+  --font-main: Georgia, "Microsoft YaHei UI", "Microsoft YaHei", serif;
+}
+
+:root.platform-windows.theme-ink,
+body.platform-windows.theme-ink {
+  --font-main: "Noto Serif SC", "Source Han Serif SC", Georgia, "Microsoft YaHei UI", "Microsoft YaHei", serif;
+}

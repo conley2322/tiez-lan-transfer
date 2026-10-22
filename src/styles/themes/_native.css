@@ -1,0 +1,182 @@
+/* Rules shared by the platform-native themes (Mica, Acrylic, macOS).
+   Loaded before their own files, as these rules used to sit in the
+   component stylesheets. */
+
+/* ---- From components/Announcement.css ---- */
+
+.theme-mica .announcement-ticker,
+.theme-acrylic .announcement-ticker,
+.theme-macos .announcement-ticker {
+    background: var(--bg-panel);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--line-soft);
+    font-family: system-ui, -apple-system, sans-serif;
+    height: 42px;
+    box-shadow: 0 2px 10px rgba(var(--shadow-rgb), 0.05);
+}
+
+.theme-mica .ticker-icon,
+.theme-acrylic .ticker-icon,
+.theme-macos .ticker-icon {
+    border-right: 1px solid var(--line-soft);
+    color: var(--text-secondary);
+    background: transparent;
+}
+
+.theme-mica .ticker-count,
+.theme-acrylic .ticker-count,
+.theme-macos .ticker-count,
+.theme-mica .ticker-fixed-close,
+.theme-acrylic .ticker-fixed-close,
+.theme-macos .ticker-fixed-close {
+    border-left: 1px solid var(--line-soft);
+    background: transparent;
+}
+
+.theme-mica .ticker-tag,
+.theme-acrylic .ticker-tag,
+.theme-macos .ticker-tag {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.theme-mica .ticker-fixed-close:hover,
+.theme-acrylic .ticker-fixed-close:hover,
+.theme-macos .ticker-fixed-close:hover {
+    background: rgba(var(--status-danger-rgb), 0.1);
+    color: var(--status-danger);
+}
+
+/* ---- From components/buttons.css ---- */
+
+body/* A pinned window is a persistent state, not a primary action. Keep its
+   header indicator quiet in translucent themes instead of emitting a blue
+   active glow every time the window is shown. */
+.theme-mica .header-pin-btn.active,
+body.theme-acrylic .header-pin-btn.active,
+body.theme-macos .header-pin-btn.active {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+
+/* ---- From components/compact-mode.css ---- */
+
+body.theme-mica .history-item.compact,
+body.theme-acrylic .history-item.compact,
+body.theme-macos .history-item.compact,
+html.theme-mica .history-item.compact,
+html.theme-acrylic .history-item.compact,
+html.theme-macos .history-item.compact {
+    /* Still denser than normal cards, but keep room for the 20px ··· control. */
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 28px;
+}
+
+/* ---- From components/file-transfer.css ---- */
+
+.theme-mica .wt-chat-view,
+.theme-acrylic .wt-chat-view,
+.theme-macos .wt-chat-view {
+  /* Let the native glass show through exactly as it does behind the main list. */
+  --im-canvas: transparent;
+  --im-canvas-shade: transparent;
+  --im-canvas-pattern: none;
+  --im-header: color-mix(in srgb, var(--bg-toolbar) 78%, transparent);
+  --im-surface: color-mix(in srgb, var(--bg-input) 86%, transparent);
+  --im-input: color-mix(in srgb, var(--bg-input) 92%, transparent);
+  --im-incoming: color-mix(in srgb, var(--bg-input) 88%, var(--bg-panel) 12%);
+}
+
+/* ---- From components/tags.css ---- */
+
+.theme-mica .search-input.dropdown-open,
+.theme-acrylic .search-input.dropdown-open,
+.theme-macos .search-input.dropdown-open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border: 1px solid rgba(var(--neutral-rgb), 0.2);
+    border-bottom-color: transparent;
+    box-shadow: none;
+    background: var(--popover-background);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+}
+
+:root.dark-mode .theme-mica .search-input.dropdown-open,
+:root.dark-mode .theme-acrylic .search-input.dropdown-open,
+:root.dark-mode .theme-macos .search-input.dropdown-open {
+    background: var(--popover-background);
+    border-color: rgba(var(--highlight-rgb), 0.1);
+}
+
+.theme-mica .tags-dropdown,
+.theme-acrylic .tags-dropdown,
+.theme-macos .tags-dropdown {
+    margin-top: 0;
+    padding: 4px 6px 6px;
+    border: 1px solid var(--line-soft);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: var(--popover-background);
+    backdrop-filter: var(--popover-backdrop-filter);
+    -webkit-backdrop-filter: var(--popover-backdrop-filter);
+    box-shadow: var(--shadow-md);
+}
+
+:root.dark-mode .theme-mica .tags-dropdown,
+:root.dark-mode .theme-acrylic .tags-dropdown,
+:root.dark-mode .theme-macos .tags-dropdown {
+    background: var(--popover-background);
+    border-color: rgba(var(--highlight-rgb), 0.1);
+    box-shadow: 0 12px 28px rgba(var(--shadow-rgb), 0.38);
+}
+
+.theme-mica .tags-dropdown .tags-list,
+.theme-acrylic .tags-dropdown .tags-list,
+.theme-macos .tags-dropdown .tags-list {
+    flex-direction: column;
+    gap: 1px;
+}
+
+.theme-mica .tags-dropdown .tag-chip,
+.theme-acrylic .tags-dropdown .tag-chip,
+.theme-macos .tags-dropdown .tag-chip {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-weight: 550;
+    box-shadow: none;
+    transform: none;
+}
+
+.theme-mica .tags-dropdown .tag-chip::before,
+.theme-acrylic .tags-dropdown .tag-chip::before,
+.theme-macos .tags-dropdown .tag-chip::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: var(--tag-color, var(--accent-color));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--tag-color, var(--accent-color)) 16%, transparent);
+}
+
+.theme-mica .tags-dropdown .tag-chip:hover,
+.theme-acrylic .tags-dropdown .tag-chip:hover,
+.theme-macos .tags-dropdown .tag-chip:hover {
+    transform: none;
+    background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    border-color: var(--line-soft);
+    filter: none;
+}

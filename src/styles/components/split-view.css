@@ -1,0 +1,682 @@
+/* Wide two-column layout: history list on the left, detail of the hovered or
+   keyboard-selected entry on the right. The columns snap rather than ease:
+   settings, tags and transfer render in the left column, so an eased grid
+   swept every page open from the left each time one was switched to. */
+
+.main-content.is-split {
+  grid-template-columns: var(--split-columns, minmax(240px, 2fr) minmax(0, 3fr));
+}
+
+.main-split-detail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  container-type: size;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Divider as an inset shadow so the collapsed column takes no width at all. */
+.main-content.is-split .main-split-detail {
+  box-shadow: inset 1px 0 0 var(--line-soft);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.detail-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.detail-source-name {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-content-type {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.detail-content-type::before {
+  content: "·";
+  margin-inline-end: 8px;
+}
+
+.detail-media-info,
+.detail-timestamp {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.detail-preview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+}
+
+.detail-text {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: var(--clipboard-item-font-size);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Content in the detail pane can be selected and copied in part. */
+.detail-rich,
+.detail-rich *,
+.detail-files strong,
+.detail-files span,
+.detail-note p {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.detail-text.is-code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* Source and AI output follow the same reading/scrolling column. */
+.detail-ai-result {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.detail-ai-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detail-ai-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.detail-ai-copy,
+.detail-ai-submit {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--button-radius);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.detail-ai-copy:hover,
+.detail-ai-submit:hover:not(:disabled) {
+  background: var(--st-hover);
+}
+
+.detail-ai-copy:focus-visible,
+.detail-ai-submit:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.detail-ai-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.detail-ai-reasoning {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--button-radius);
+}
+
+.detail-ai-reasoning summary {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.detail-ai-reasoning summary:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.detail-ai-reasoning .detail-text {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.detail-ai-decision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-ai-submit.is-primary {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: var(--on-accent);
+}
+
+.detail-ai-submit.is-primary:hover {
+  background: var(--accent-color);
+  filter: brightness(1.08);
+}
+
+.detail-ai-supplement {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-ai-label,
+.detail-ai-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.detail-ai-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-ai-input-row .search-input {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-ai-result .ai-skeleton-line { animation: none; }
+}
+
+.detail-truncated {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-main);
+  font-size: var(--font-size-xs);
+}
+
+.detail-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: var(--card-radius);
+}
+
+.detail-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail-files li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.detail-files strong {
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  overflow-wrap: anywhere;
+}
+
+.detail-files span {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.detail-files-more {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Several files: rows for previewable files pick what the preview below shows.
+   The list scrolls on its own so a long one doesn't push the preview away. */
+.detail-files.has-preview {
+  flex: 0 0 auto;
+  gap: 2px;
+  max-height: 240px;
+  max-height: 40cqh;
+  overflow-y: auto;
+}
+
+.detail-file-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+button.detail-file-row {
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+button.detail-file-row:hover {
+  background: var(--bg-input);
+}
+
+button.detail-file-row[aria-pressed="true"] {
+  background: var(--accent-soft);
+}
+
+button.detail-file-row:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+
+.detail-sensitive,
+.detail-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.detail-annotations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-block-start: 24px;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.detail-tag {
+  color: var(--accent-color);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.detail-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.detail-note svg {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.detail-note p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.detail-tag-editor {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--button-radius);
+  background: var(--bg-panel);
+}
+
+.detail-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block-end: 8px;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.detail-editor-heading .btn-icon,
+.detail-tag-input-row .btn-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+}
+
+.detail-editor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-end: 12px;
+}
+
+.detail-editor-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 6px 4px 8px;
+  border-radius: var(--button-radius);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+  font-size: var(--font-size-xs);
+}
+
+.detail-editor-tag > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-editor-tag button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--button-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.detail-editor-tag button:hover {
+  background: var(--bg-input);
+}
+
+.detail-tag-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-tag-input-row .tag-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--button-radius);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.detail-tag-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 144px;
+  overflow-y: auto;
+  margin-block-start: 8px;
+}
+
+.detail-tag-suggestions button {
+  flex: 0 0 auto;
+  padding: 8px 8px;
+  border: 0;
+  border-radius: var(--button-radius);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.detail-tag-suggestions button:hover,
+.detail-tag-suggestions button[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.detail-tag-editor button:focus-visible,
+.detail-tag-input-row .tag-input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.detail-note-editor .item-note-editor-footer {
+  flex-wrap: wrap;
+}
+
+.detail-app-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-xs);
+}
+
+/* ---- Actions: per-row buttons move into the pane's action bar ---- */
+
+/* Must outrank `body.hide-unselected-item-actions … .item-actions`, which
+   forces display:flex; this file loads after clipboard-item.css. */
+body.split-view-active .main-content.is-split .history-item .item-actions {
+  display: none;
+}
+
+/* Compact rows hid the time slot on hover to make room for ···; with no
+   actions in the row it stays put. */
+body.split-view-active .main-content.is-split .history-item.compact:hover .item-meta-right-info,
+body.split-view-active .main-content.is-split .history-item.compact.selected .item-meta-right-info {
+  opacity: 0.68;
+  visibility: visible;
+}
+
+/* The row the pane (and its action bar) is showing, even after the pointer
+   has moved over to the pane. */
+.main-content.is-split .history-item.detail-focused:not(.selected) {
+  background: var(--card-selected-background);
+  border-color: var(--card-selected-border-color);
+}
+
+.detail-actions-wrap {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 8px 16px 4px;
+  padding: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--button-radius) + 6px);
+  box-shadow: var(--shadow-xs);
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.detail-action {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex: 0 0 auto;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.detail-action:hover {
+  background: var(--bg-input);
+  border-color: transparent;
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: none;
+}
+
+.detail-action.is-danger:hover {
+  background: rgba(var(--status-danger-rgb), 0.08);
+  color: var(--status-danger);
+}
+
+.detail-action:active {
+  box-shadow: none;
+  transform: scale(0.96);
+}
+
+.detail-action.active {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-color);
+  box-shadow: none;
+}
+
+.detail-action.is-primary {
+  width: auto;
+  gap: 6px;
+  margin-inline-start: auto;
+  padding: 0 16px;
+  /* Themes pair these two for legibility; accent + --on-accent is not
+     (white on terminal green or sakura pink is barely readable). */
+  background: var(--button-active-filled-background);
+  border-color: var(--button-active-filled-border-color);
+  color: var(--button-active-filled-color);
+  font-family: var(--font-main);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.detail-action.is-primary:hover {
+  background: var(--button-active-filled-background);
+  color: var(--button-active-filled-color);
+  filter: brightness(0.95);
+}
+
+.detail-action:focus-visible,
+.detail-action-popover button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.detail-action:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.detail-action-disclosure {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.detail-action-popover {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  inset-inline-start: 0;
+  bottom: calc(100% + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  min-width: 160px;
+  max-width: 240px;
+  max-height: calc(100cqh - 76px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 4px;
+  background: var(--menu-background);
+  border: var(--menu-border);
+  border-radius: var(--menu-radius);
+  box-shadow: var(--menu-shadow);
+  backdrop-filter: var(--popover-backdrop-filter);
+}
+
+.detail-action-popover button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--button-radius);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: var(--font-size-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
+.detail-action-popover button:hover {
+  background: var(--bg-input);
+}
+
+.detail-action-popover button.is-danger {
+  color: var(--status-danger);
+}
+
+.detail-action-popover button.is-danger:hover {
+  background: rgba(var(--status-danger-rgb), 0.08);
+}
+
+.detail-file-preview {
+  margin-top: var(--spacing-md, 16px);
+}
+.detail-file-preview .detail-text {
+  tab-size: 4;
+}

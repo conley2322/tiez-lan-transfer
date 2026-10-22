@@ -1,0 +1,265 @@
+/* Desktop Pin Sticker (贴图) Window Styles - Zero Background & Floating Elevation Shadow */
+
+html.window-pin-sticker,
+html.pin-sticker,
+body.window-pin-sticker,
+body.pin-sticker,
+html.window-pin-sticker body #root,
+html.pin-sticker body #root,
+body.window-pin-sticker #root,
+body.pin-sticker #root,
+:root.window-pin-sticker #root,
+:root.pin-sticker #root /* design-ok: the sticker window stays transparent under any theme, installed ones included */ {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: hidden !important;
+}
+
+body.window-pin-sticker #root,
+body.pin-sticker #root /* design-ok: the sticker window stays transparent under any theme, installed ones included */ {
+  width: 100vw !important;
+  height: 100vh !important;
+  display: block !important;
+}
+
+html.window-pin-sticker::before,
+html.window-pin-sticker::after,
+html.pin-sticker::before,
+html.pin-sticker::after,
+html.window-pin-sticker body::before,
+html.window-pin-sticker body::after,
+html.pin-sticker body::before,
+html.pin-sticker body::after,
+html.window-pin-sticker body #root::before,
+html.window-pin-sticker body #root::after,
+html.pin-sticker body #root::before,
+html.pin-sticker body #root::after,
+body.window-pin-sticker::before,
+body.window-pin-sticker::after,
+body.pin-sticker::before,
+body.pin-sticker::after,
+body.window-pin-sticker #root::before,
+body.window-pin-sticker #root::after,
+body.pin-sticker #root::before,
+body.pin-sticker #root::after /* design-ok: the sticker window stays transparent under any theme, installed ones included */ {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  background: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.pin-sticker-root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 10px;
+  overflow: visible;
+  background: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.pin-sticker-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: grab;
+  transition: opacity var(--duration-base) ease;
+}
+
+.pin-sticker-shell:active {
+  cursor: grabbing;
+}
+
+.pin-sticker-image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: auto;
+  border-radius: var(--radius-xs);
+  box-sizing: border-box;
+  background: transparent;
+  /* Crisp 1px boundary ring + subtle ambient light GPU shadow */
+  box-shadow: 0 0 0 1px rgba(var(--neutral-rgb), 0.18), 0 3px 12px rgba(var(--shadow-rgb), 0.06);
+  transition: box-shadow var(--duration-base) ease;
+}
+
+html.light-mode .pin-sticker-image-wrapper,
+body.light-mode .pin-sticker-image-wrapper {
+  box-shadow: 0 0 0 1px rgba(var(--shadow-rgb), 0.08), 0 3px 12px rgba(var(--shadow-rgb), 0.06);
+}
+
+html.dark-mode .pin-sticker-image-wrapper,
+body.dark-mode .pin-sticker-image-wrapper {
+  box-shadow: 0 0 0 1px rgba(var(--highlight-rgb), 0.12), 0 4px 16px rgba(var(--shadow-rgb), 0.25);
+}
+
+.pin-sticker-shell:hover .pin-sticker-image-wrapper {
+  box-shadow: 0 0 0 1px rgba(var(--neutral-rgb), 0.28), 0 4px 16px rgba(var(--shadow-rgb), 0.10);
+}
+
+html.light-mode .pin-sticker-shell:hover .pin-sticker-image-wrapper {
+  box-shadow: 0 0 0 1px rgba(var(--shadow-rgb), 0.14), 0 4px 16px rgba(var(--shadow-rgb), 0.08);
+}
+
+html.dark-mode .pin-sticker-shell:hover .pin-sticker-image-wrapper {
+  box-shadow: 0 0 0 1px rgba(var(--highlight-rgb), 0.22), 0 5px 20px rgba(var(--shadow-rgb), 0.32);
+}
+
+.pin-sticker-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  transform-origin: center center;
+  transition: transform var(--duration-fast) ease-out;
+  pointer-events: auto;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+  border-radius: 0;
+  filter: none;
+  outline: none;
+}
+
+/* Floating Action Toolbar on BOTTOM Center of Image (Theme-Integrated) */
+.pin-sticker-toolbar {
+  position: absolute;
+  bottom: 16px;
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--popover-background);
+  color: var(--popover-color);
+  backdrop-filter: var(--popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--popover-backdrop-filter);
+  border: var(--popover-border);
+  border-radius: var(--popover-radius);
+  box-shadow: var(--popover-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) cubic-bezier(0.2, 0, 0, 1), transform var(--duration-base) cubic-bezier(0.2, 0, 0, 1);
+  z-index: var(--z-overlay);
+}
+
+.pin-sticker-shell:hover .pin-sticker-toolbar {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.pin-sticker-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: max(calc(var(--popover-radius) - var(--radius-xs)), var(--radius-xs));
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--popover-color);
+  opacity: 0.85;
+  cursor: pointer;
+  transition: background var(--duration-base) ease, color var(--duration-base) ease, opacity var(--duration-base) ease, transform var(--duration-fast) ease, border-color var(--duration-base) ease;
+}
+
+.pin-sticker-btn:hover {
+  background: var(--bg-button);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.pin-sticker-btn:active {
+  transform: scale(0.95);
+}
+
+.pin-sticker-btn.active {
+  background: var(--accent-color);
+  color: var(--on-accent);
+  opacity: 1;
+}
+
+.pin-sticker-btn.danger:hover {
+  background: var(--status-danger);
+  color: var(--on-accent);
+  opacity: 1;
+}
+
+.pin-sticker-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--line-soft);
+  margin: 0 2px;
+}
+
+/* Floating Status Indicator (Center/Top Toast) */
+.pin-sticker-toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: var(--popover-background);
+  color: var(--popover-color);
+  backdrop-filter: var(--popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--popover-backdrop-filter);
+  border: var(--popover-border);
+  border-radius: var(--popover-radius);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  pointer-events: none;
+  z-index: var(--z-toast);
+  animation: fadeInOut 1.2s ease forwards; /* design-ok: how long the hint stays, not a transition */
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb), 0.25);
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+}

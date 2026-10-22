@@ -1,0 +1,175 @@
+/* Screen-corner drop box (window=corner).
+   The window is transparent and always exactly as large as the state it shows,
+   so both states fill it and nothing here needs a size. */
+
+html.window-corner,
+html.window-corner body,
+html.window-corner #root,
+html.window-corner .app-container {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.corner-box {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-main);
+}
+
+/* ── collapsed: the capsule ─────────────────────────────────── */
+
+.corner-bar {
+  width: 34px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--hud-bar) calc(var(--corner-opacity) * 1%),
+    transparent
+  );
+  border: 0.5px solid var(--hud-bar-line);
+  color: var(--on-hud);
+  font-size: var(--font-size-2xs);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.corner-bar-mark {
+  font-size: var(--font-size-lg);
+}
+
+.corner-bar-note {
+  max-width: 34px;
+  overflow-wrap: break-word;
+  color: var(--on-hud);
+}
+
+html.window-corner-left .corner-bar-mark {
+  /* The arrow points where the file has to travel. */
+  transform: scaleX(-1);
+}
+
+/* ── expanded: the peer list ───────────────────────────────── */
+
+html.window-corner-dragging .corner-box {
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.corner-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  background: color-mix(
+    in srgb,
+    var(--hud-panel) calc(var(--corner-opacity) * 1%),
+    transparent
+  );
+  border: 0.5px solid var(--hud-panel-line);
+  color: var(--on-hud);
+  overflow: hidden;
+}
+
+.corner-tip {
+  font-size: var(--font-size-xs);
+  line-height: 16px;
+  margin-bottom: 10px;
+  text-align: center;
+  color: var(--on-hud-muted);
+}
+
+.corner-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.corner-row {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--on-hud);
+  font: inherit;
+  text-align: left;
+}
+
+.corner-row.is-hot {
+  background: var(--hud-row-hot);
+}
+
+.corner-row.is-offline {
+  opacity: 0.6;
+}
+
+.corner-avatar {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  color: var(--on-media);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.corner-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.corner-hint {
+  flex: none;
+  font-size: var(--font-size-2xs);
+  color: var(--on-hud-muted);
+}
+
+/* Nothing paired yet: the box still explains itself and opens 设置. */
+.corner-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--on-hud-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.corner-empty strong {
+  color: var(--on-hud);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}

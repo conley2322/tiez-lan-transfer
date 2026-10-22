@@ -1,0 +1,206 @@
+import { useCallback, useEffect, useRef, type RefObject } from "react";
+
+type UseSearchScrollOptions = {
+  containerRef: RefObject<HTMLElement | null>;
+  /** Persistent setting: when true, search stays visible (scroll never hides it). */
+  searchBoxPinned: boolean;
+  /** Transient visibility for the search UI. */
+  showSearchBox: boolean;
+  setShowSearchBox: (val: boolean) => void;
+  search: string;
+  showSettings: boolean;
+  showTagManager: boolean;
+  dismissSearchTagFilter?: () => void;
+};
+
+const SHOW_THRESHOLD = 16;
+const WHEEL_DELTA_MIN = 6;
+/** Hide search as soon as the list moves slightly downward. */
+const HIDE_SCROLL_OFFSET = 4;
+/** Treat near-top as top (Virtuoso may report small non-zero offsets). */
+const AT_TOP_EPSILON = 12;
+/** Brief pause after landing at top to avoid momentum overscroll triggering reveal */
+const TOP_SETTLE_MS = 72;
+
+export const useSearchScroll = ({
+  containerRef,
+  searchBoxPinned,
+  showSearchBox,
+  setShowSearchBox,
+  search,
+  showSettings,
+  showTagManager,
+  dismissSearchTagFilter
+}: UseSearchScrollOptions) => {
+  const scrollTriggerRef = useRef(0);
+  const listScrollTopRef = useRef(0);
+  const topReachedTimeRef = useRef(0);
+  const wheelAttachedRef = useRef(false);
+  const wheelListenerRef = useRef<((e: WheelEvent) => void) | null>(null);
+
+  const searchBoxPinnedRef = useRef(searchBoxPinned);
+  const showSearchBoxRef = useRef(showSearchBox);
+  const searchRef = useRef(search);
+  const showSettingsRef = useRef(showSettings);
+  const showTagManagerRef = useRef(showTagManager);
+  const setShowSearchBoxRef = useRef(setShowSearchBox);
+  const dismissRef = useRef(dismissSearchTagFilter);
+
+  searchBoxPinnedRef.current = searchBoxPinned;
+  showSearchBoxRef.current = showSearchBox;
+  searchRef.current = search;
+  showSettingsRef.current = showSettings;
+  showTagManagerRef.current = showTagManager;
+  setShowSearchBoxRef.current = setShowSearchBox;
+  dismissRef.current = dismissSearchTagFilter;
+
+  const shouldCaptureWheel = useCallback(() => {
+    // Pinned search never needs scroll-to-reveal / hide gestures.
+    if (searchBoxPinnedRef.current || showSettingsRef.current || showTagManagerRef.current) {
+      return false;
+    }
+    return showSearchBoxRef.current || listScrollTopRef.current <= AT_TOP_EPSILON;
+  }, []);
+
+  const syncWheelListener = useCallback(() => {
+    const el = containerRef.current;
+    const listener = wheelListenerRef.current;
+    if (!el || !listener) return;
+
+    const want = shouldCaptureWheel();
+    if (want && !wheelAttachedRef.current) {
+      el.addEventListener("wheel", listener, { capture: true, passive: false });
+      wheelAttachedRef.current = true;
+    } else if (!want && wheelAttachedRef.current) {
+      el.removeEventListener("wheel", listener, { capture: true });
+      wheelAttachedRef.current = false;
+      scrollTriggerRef.current = 0;
+    }
+  }, [containerRef, shouldCaptureWheel]);
+
+  const hideSearchBox = () => {
+    if (
+      searchBoxPinnedRef.current ||
+      showSettingsRef.current ||
+      showTagManagerRef.current ||
+      !showSearchBoxRef.current ||
+      searchRef.current.length > 0
+    ) {
+      return false;
+    }
+
+    dismissRef.current?.();
+    showSearchBoxRef.current = false;
+    setShowSearchBoxRef.current(false);
+    scrollTriggerRef.current = 0;
+    syncWheelListener();
+    return true;
+  };
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const isAtTop = () => listScrollTopRef.current <= AT_TOP_EPSILON;
+
+    const onWheel = (e: WheelEvent) => {
+      // Only the list drives search: ignore the header, the search UI, the
+      // category tabs, and the split view's detail pane, which scrolls itself.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("header, .search-reveal, .search-container, .search-type-filters, .tags-dropdown, .main-split-detail")) {
+        return;
+      }
+
+      // Never mutate the pinned preference — only transient visibility.
+      if (searchBoxPinnedRef.current) return;
+
+      const deltaY = e.deltaY;
+      const atTop = isAtTop();
+      const scrollingDown = deltaY > 0;
+      const scrollingUp = deltaY < 0;
+      const searchOpen = showSearchBoxRef.current;
+      const searchEmpty = searchRef.current.length === 0;
+
+      if (scrollingDown && searchOpen && searchEmpty) {
+        const hidden = hideSearchBox();
+        if (hidden && atTop) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+
+      if (Math.abs(deltaY) <= WHEEL_DELTA_MIN) return;
+
+      if (scrollingUp && atTop && !searchOpen) {
+        if (Date.now() - topReachedTimeRef.current > TOP_SETTLE_MS) {
+          scrollTriggerRef.current += Math.abs(deltaY);
+          if (scrollTriggerRef.current >= SHOW_THRESHOLD) {
+            e.preventDefault();
+            e.stopPropagation();
+            dismissRef.current?.();
+            showSearchBoxRef.current = true;
+            setShowSearchBoxRef.current(true);
+            scrollTriggerRef.current = 0;
+            syncWheelListener();
+            return;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+        } else {
+          scrollTriggerRef.current = 0;
+        }
+      } else if (!scrollingUp || !atTop) {
+        scrollTriggerRef.current = 0;
+      }
+    };
+
+    wheelListenerRef.current = onWheel;
+    syncWheelListener();
+
+    return () => {
+      if (wheelAttachedRef.current && wheelListenerRef.current) {
+        el.removeEventListener("wheel", wheelListenerRef.current, { capture: true });
+        wheelAttachedRef.current = false;
+      }
+      wheelListenerRef.current = null;
+    };
+  }, [containerRef, syncWheelListener]);
+
+  useEffect(() => {
+    syncWheelListener();
+  }, [searchBoxPinned, showSearchBox, showSettings, showTagManager, syncWheelListener]);
+
+  // Keep visibility in sync when the persistent preference flips.
+  useEffect(() => {
+    if (searchBoxPinned) {
+      setShowSearchBox(true);
+    }
+  }, [searchBoxPinned, setShowSearchBox]);
+
+  const handleListScroll = useCallback(
+    (offset: number) => {
+      if (offset === listScrollTopRef.current) return;
+
+      const wasAtTop = listScrollTopRef.current <= AT_TOP_EPSILON;
+      if (offset <= AT_TOP_EPSILON && listScrollTopRef.current > AT_TOP_EPSILON) {
+        topReachedTimeRef.current = Date.now();
+      }
+
+      if (offset > HIDE_SCROLL_OFFSET) {
+        hideSearchBox();
+      }
+
+      listScrollTopRef.current = offset;
+
+      if (wasAtTop !== offset <= AT_TOP_EPSILON) {
+        syncWheelListener();
+      }
+    },
+    [syncWheelListener]
+  );
+
+  return {
+    handleListScroll
+  };
+};

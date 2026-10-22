@@ -1,0 +1,279 @@
+/* AI Assistant Styles — Clean, Direct Buttons Without Extra Nested Box */
+
+.ai-options-inline {
+  overflow: hidden;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.ai-options-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 4px;
+  z-index: var(--z-dropdown);
+  margin-top: 4px;
+  width: max-content;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 4px;
+  background: var(--menu-background);
+  color: var(--popover-color);
+  border: var(--menu-border);
+  border-radius: var(--menu-radius);
+  box-shadow: var(--menu-shadow);
+  backdrop-filter: var(--popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--popover-backdrop-filter);
+  max-height: 200px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Direct flat buttons layout (zero outer box / zero border) */
+.ai-actions-group {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.ai-actions-group.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-action-btn {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 28px;
+  padding: 0 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  font-family: var(--font-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  background: var(--bg-button);
+  color: var(--text-primary);
+  border: var(--button-border);
+  border-radius: var(--button-radius);
+  box-shadow: var(--button-shadow);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-fast) ease, border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.ai-actions-group.compact .ai-action-btn {
+  width: 100%;
+  height: 30px;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+
+.ai-action-btn:hover {
+  background: var(--accent-color);
+  color: var(--on-accent);
+  border-color: var(--button-hover-border-color);
+  transform: var(--button-hover-transform);
+  box-shadow: var(--button-hover-shadow);
+}
+
+.ai-action-btn:active {
+  transform: var(--button-active-transform);
+  box-shadow: var(--button-active-shadow);
+}
+
+/* Theme-specific AI buttons live in the theme files (themes/*.css). */
+
+/* Ink Wash Theme */
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Open menu, not an "on" state: outline only, unlike the filled .btn-icon.active
+   that themes restyle. Scoped to the toolbar so it outranks those. */
+.item-actions .btn-icon.ai-btn.active {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: transparent;
+}
+
+/* AI Profile Library: a plain list of rows that shares the settings row rhythm. */
+.ai-profile-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-profile-card {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3, 12px);
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--st-divider, var(--panel-divider-color));
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.ai-profile-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-profile-name {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--st-label-size, var(--font-size-base));
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-profile-sub {
+  color: var(--text-secondary);
+  font-size: var(--st-desc-size, var(--font-size-xs));
+  line-height: 18px;
+}
+
+.ai-profile-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--st-space-1, 4px);
+}
+
+.settings-view .ai-profile-actions .btn-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
+  transform: none;
+}
+
+.settings-view .ai-profile-actions .btn-icon:hover {
+  background: var(--st-hover);
+  color: var(--text-primary);
+}
+
+.settings-view .ai-profile-actions .btn-icon.is-danger:hover {
+  color: var(--status-danger);
+}
+
+/* AI result waiting for the user to replace or discard */
+.ai-pending-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: default;
+}
+
+.ai-pending-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent-color);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-pending-hint {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.ai-pending-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-pending-btn {
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--button-radius);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.ai-pending-btn:hover {
+  background: var(--st-hover);
+}
+
+.ai-pending-btn.is-primary {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: var(--on-accent);
+}
+
+.ai-pending-btn.is-primary:hover {
+  filter: brightness(1.08);
+}
+
+.ai-pending-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* AI Skeleton Loading */
+.ai-skeleton-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.ai-skeleton-line {
+  height: 14px;
+  background: linear-gradient(90deg,
+      rgba(var(--neutral-rgb), 0.1) 25%,
+      rgba(var(--neutral-rgb), 0.2) 50%,
+      rgba(var(--neutral-rgb), 0.1) 75%);
+  background-size: 200% 100%;
+  border-radius: var(--radius-xs);
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

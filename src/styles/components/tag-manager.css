@@ -1,0 +1,715 @@
+/* Scrollbars follow the app-wide rule in scrollbar.css, as on the settings page. */
+.tag-manager-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.tag-manager-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tag-manager-filter {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--panel-divider-color);
+  background: var(--bg-panel);
+  flex-shrink: 0;
+}
+
+.tag-manager-chip-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  scrollbar-gutter: auto;
+}
+
+/* The narrow layout's horizontal chip strip keeps a hairline indicator. */
+html.platform-macos .tag-manager-body:not(.is-split) .tag-manager-chip-row::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+
+html.platform-macos .tag-manager-body:not(.is-split) .tag-manager-chip-row::-webkit-scrollbar-thumb {
+  border: 0;
+  border-radius: var(--radius-pill);
+}
+
+.tag-manager-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--bg-element);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.tag-manager-chip:hover {
+  background: var(--bg-input);
+}
+
+.tag-manager-chip.active {
+  background: color-mix(in srgb, var(--accent-color) 12%, var(--bg-content));
+  border-color: rgba(var(--accent-color-rgb), 0.28);
+  color: var(--accent-color);
+}
+
+.tag-manager-chip.is-create {
+  border-style: dashed;
+  border-color: rgba(var(--accent-color-rgb), 0.22);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.tag-manager-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 112px;
+}
+
+.tag-manager-chip-count {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tag-manager-chip-empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 4px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.tag-color-wrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.tag-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(var(--shadow-rgb), 0.08);
+}
+
+.tag-color-dot:hover {
+  transform: scale(1.15);
+}
+
+.tag-color-dot:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.tag-target-actions {
+  display: none;
+  align-items: center;
+  gap: 0;
+  margin-left: 2px;
+}
+
+.tag-manager-chip:hover .tag-target-actions,
+.tag-manager-chip:focus-within .tag-target-actions,
+.tag-manager-chip.menu-open .tag-target-actions {
+  display: inline-flex;
+}
+
+.tag-manager-action-menu {
+  position: fixed;
+  z-index: var(--z-context-menu);
+  width: 144px;
+  padding: 4px;
+  border: var(--menu-border);
+  border-radius: var(--button-radius);
+  background: var(--menu-background);
+  backdrop-filter: var(--popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--popover-backdrop-filter);
+  box-shadow: var(--menu-shadow);
+}
+
+.tag-manager-action-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--button-radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-manager-action-menu > button:hover,
+.tag-manager-action-menu > button:focus-visible {
+  outline: none;
+  background: var(--menu-item-hover-background);
+  color: var(--menu-item-hover-color);
+}
+
+.tag-manager-action-menu > button.danger {
+  color: var(--status-danger);
+}
+
+.tag-manager-action-menu > button.danger:hover,
+.tag-manager-action-menu > button.danger:focus-visible {
+  background: rgba(var(--status-danger-rgb), 0.12);
+  color: var(--status-danger);
+}
+
+@media (hover: none) {
+  .tag-target-actions {
+    display: inline-flex;
+  }
+}
+
+.tag-target-action-btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--button-radius);
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tag-target-action-btn:hover {
+  background: var(--bg-input);
+  color: var(--accent-color);
+}
+
+.tag-target-action-btn.danger:hover {
+  color: var(--status-danger);
+}
+
+.inline-tag-edit {
+  width: 88px;
+  min-width: 0;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid rgba(var(--accent-color-rgb), 0.22);
+  border-radius: var(--button-radius);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+}
+
+.tag-manager-editor {
+  background: var(--bg-content);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tag-manager-fab-add-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  z-index: 5;
+  color: var(--accent-color);
+}
+
+.tag-manager-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.tag-manager-editor .advanced-editor-toolbar {
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.tag-manager-editor .advanced-editor-title {
+  font-size: var(--font-size-base);
+  line-height: 1.2;
+}
+
+.tag-manager-editor .advanced-editor-subtitle {
+  margin-top: 1px;
+  font-size: var(--font-size-xs);
+}
+
+.tag-manager-editor .advanced-editor-actions {
+  gap: 4px;
+}
+
+.tag-manager-editor .advanced-rule-list.tag-manager-items {
+  padding: 8px 10px 40px;
+  min-width: 0;
+  overflow-x: hidden;
+  /* Overlay scrollbars need no permanent gutter. */
+  scrollbar-gutter: auto;
+  gap: 6px;
+}
+
+/* Empty state is the editor's own message, not a list item or nested card. */
+.tag-manager-empty-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+}
+
+.tag-manager-empty-state {
+  max-width: 420px;
+}
+
+.tag-manager-empty-title {
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+}
+
+.tag-manager-empty-text {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.tag-manager-sort-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--button-radius);
+  background: color-mix(in srgb, var(--bg-panel) 68%, transparent);
+  border: 1px solid rgba(var(--accent-color-rgb), 0.08);
+}
+
+.tag-manager-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
+  border: none;
+  border-radius: calc(var(--button-radius) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tag-manager-sort-btn span {
+  display: none;
+}
+
+.tag-manager-sort-btn:hover {
+  background: var(--bg-element);
+  color: var(--text-primary);
+}
+
+.tag-manager-sort-btn.active {
+  background: var(--card-selected-background);
+  color: var(--accent-color);
+}
+
+.tag-manager-sort-btn.danger {
+  color: var(--status-danger);
+}
+
+.tag-manager-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--button-radius);
+  background: color-mix(in srgb, var(--bg-panel) 68%, transparent);
+  border: 1px solid rgba(var(--accent-color-rgb), 0.08);
+}
+
+.tag-manager-view-toggle .toggle-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--button-radius) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tag-manager-view-toggle .toggle-btn:hover {
+  background: var(--bg-element);
+  color: var(--text-primary);
+}
+
+.tag-manager-view-toggle .toggle-btn.active {
+  background: var(--accent-color);
+  color: var(--on-accent);
+}
+
+.tag-manager-items {
+  padding-top: 0;
+}
+
+.tag-manager-items .items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.tag-manager-items .items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.tag-manager-card {
+  flex-shrink: 0;
+  min-width: 0;
+  border: var(--advanced-card-border);
+  border-radius: var(--advanced-card-radius);
+  background: var(--advanced-card-background);
+  padding: 8px 10px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease;
+}
+
+.tag-manager-card:hover {
+  border-color: rgba(var(--accent-color-rgb), 0.18);
+  box-shadow: 0 4px 14px rgba(var(--shadow-rgb), 0.04);
+}
+
+.tag-manager-card.selected {
+  border-color: rgba(var(--accent-color-rgb), 0.28);
+  background: var(--card-selected-background);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-color-rgb), 0.12);
+}
+
+.tag-manager-card .card-top-row {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  left: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tag-manager-card:hover .card-top-row,
+.tag-manager-items.manage-mode .card-top-row,
+.tag-manager-card:has(.card-note.editing) .card-top-row,
+.tag-manager-card:focus-within .card-top-row {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tag-manager-card .card-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.tag-manager-card .card-action-btn,
+.tag-manager-card .del-btn {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  background: var(--bg-button);
+  border: var(--button-border);
+  border-radius: var(--button-radius);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease, color var(--duration-base) ease;
+}
+
+.tag-manager-card .card-action-btn svg,
+.tag-manager-card .del-btn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.tag-manager-card .card-action-btn:hover,
+.tag-manager-card .card-action-btn:focus-visible,
+.tag-manager-card .del-btn:focus-visible {
+  background: var(--bg-input);
+  border-color: color-mix(in srgb, var(--accent-color) 32%, var(--line-soft));
+  color: var(--accent-color);
+  outline: none;
+}
+
+.tag-manager-card .card-action-btn:active,
+.tag-manager-card .del-btn:active {
+  background: color-mix(in srgb, var(--bg-input) 82%, var(--accent-color) 18%);
+}
+
+.tag-manager-card .card-action-btn.active {
+  background: color-mix(in srgb, var(--bg-input) 84%, var(--accent-color) 16%);
+  border-color: color-mix(in srgb, var(--accent-color) 28%, var(--line-soft));
+  color: var(--accent-color);
+}
+
+.tag-manager-card .del-btn:hover {
+  background: color-mix(in srgb, var(--bg-input) 84%, var(--status-danger) 16%);
+  border-color: color-mix(in srgb, var(--status-danger) 32%, var(--line-soft));
+  color: var(--status-danger);
+}
+
+.tag-manager-card .card-media img {
+  max-width: 100%;
+  max-height: 88px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+.tag-manager-card .card-body-text {
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  color: var(--text-primary);
+  max-height: 3.4em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  padding-right: 16px;
+}
+
+.tag-manager-card .card-note {
+  margin: 4px 0 0;
+  min-width: 0;
+}
+
+.tag-manager-card .card-note-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-manager-card .card-note-text span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tag-manager-card .card-note-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  opacity: 0.7;
+}
+
+.tag-manager-card .card-note-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 36px;
+  max-height: 96px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color, rgba(var(--shadow-rgb), 0.12));
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  outline: none;
+}
+
+.tag-manager-card .card-note-input:focus {
+  border-color: var(--input-focus-border-color);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.tag-manager-card .card-divider {
+  display: none;
+}
+
+.tag-manager-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.tag-manager-card .meta-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-manager-status {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.selection-indicator {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--panel-divider-color);
+  border-radius: var(--radius-xs);
+  position: relative;
+}
+
+.selection-indicator.checked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.selection-indicator .inner-check {
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  display: none;
+}
+
+.selection-indicator.checked .inner-check {
+  display: block;
+}
+
+.tag-manager-body.tag-manager-modal-open {
+  pointer-events: none;
+}
+
+.tag-manager-body.is-split {
+  flex-direction: row;
+}
+
+.tag-manager-body.is-split .tag-manager-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 0 0 var(--tag-sidebar-width, 148px);
+  width: var(--tag-sidebar-width, 148px);
+  height: auto;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 8px 10px;
+  border-bottom: none;
+}
+
+.tag-manager-body.is-split .expandable-search.is-open {
+  width: 100%;
+}
+
+.tag-manager-body.is-split .tag-manager-chip-row {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  align-self: stretch;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 8px;
+  padding-bottom: 0;
+}
+
+.tag-manager-body.is-split .tag-manager-chip {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  align-self: stretch;
+  border-radius: var(--button-radius);
+}
+
+.tag-manager-body.is-split .tag-manager-chip-name {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.tag-manager-body.is-split .tag-manager-chip-empty {
+  justify-content: center;
+}
+
+.tag-manager-body.is-split .inline-tag-edit {
+  flex: 1;
+  width: auto;
+}

@@ -1,0 +1,26 @@
+/* Clipboard Item Selection (Keyboard Focus & Active Target) */
+.history-item.selected {
+  outline: var(--card-selected-outline);
+  outline-offset: var(--card-selected-outline-offset);
+  border-color: var(--card-selected-border-color);
+  box-shadow: var(--card-selected-shadow);
+  background: var(--card-selected-background);
+  color: inherit;
+  transform: none;
+  z-index: 10;
+}
+
+/* Hover is only a theme-accent frame, not a filled selection or raised card.
+   An inset outline works even in borderless themes without changing layout.
+   Only without arrow-key selection: with it, the row the pointer moves onto
+   becomes the selection (body.list-pointer-selects), and while the keys drive
+   the list (body.keyboard-owns-list) a resting pointer marks nothing. */
+.history-item:hover:not(.selected, .keyboard-owns-list *, .list-pointer-selects *) {
+  outline: 1px solid var(--accent-color);
+  outline-offset: -1px;
+  border-color: var(--accent-color);
+  box-shadow: var(--card-shadow);
+  color: inherit;
+  transform: none;
+  z-index: 5;
+}

@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [master, macos, refactor/unified-platform]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate stable and beta release metadata
+        run: npm run validate-release-matrix
+      - name: Type-check and build frontend
+        run: npm run build
+      - name: Frontend unit tests
+        run: npm test
+      - name: Lint (hooks and correctness)
+        run: npm run lint
+      - name: Style rules (docs/DESIGN-SYSTEM.md)
+        run: npm run lint:styles
+
+  ui-e2e:
+    name: UI e2e (preview harness)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          # The e2e runner needs Node >= 22.22.3 or >= 24.8.
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            e2e/package-lock.json
+      - name: Install app dependencies (the harness serves the real UI)
+        run: npm ci
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx e2e-web install chromium --with-deps
+      - name: Run UI e2e
+        working-directory: e2e
+        run: npx e2e run --target clipboard-app --reporter list,junit
+      - name: Upload e2e report and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-e2e
+          path: |
+            e2e/.e2e/report.json
+            e2e/.e2e/junit.xml
+            e2e/.e2e/results
+            e2e/.e2e/logs
+          if-no-files-found: warn
+          retention-days: 7
+
+  # Report-only: no thresholds, the point is to see where tests are missing.
+  # Rust coverage needs a full instrumented build, so it runs on master pushes
+  # and on demand, not on every PR.
+  coverage:
+    name: Coverage report
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Frontend coverage
+        run: |
+          npx vitest run --coverage | tee frontend-coverage.txt
+          { echo '### Frontend (vitest)'; echo '```'; sed -n '/Coverage summary/,/====/p' frontend-coverage.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Rust coverage
+        working-directory: src-tauri
+        run: |
+          cargo llvm-cov --locked --html
+          { echo '### Rust (cargo llvm-cov)'; echo '```'; cargo llvm-cov report --summary-only | tail -n 1; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage/
+            src-tauri/target/llvm-cov/html/
+          retention-days: 14
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Compile all tests
+        working-directory: src-tauri
+        run: cargo test --no-run --locked
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test --locked

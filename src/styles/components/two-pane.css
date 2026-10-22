@@ -1,0 +1,178 @@
+/* Copy rules (advanced workbench) and the tag manager use the settings page's
+   sidebar and content treatment (.settings-nav in settings.css). The shared
+   values are the --pane-* tokens in base.css. Both pages keep their resizable
+   sidebar; the stored width wins over the default. */
+
+/* ---- Sidebar ---- */
+
+.advanced-workbench.is-split .advanced-sidebar {
+  flex-basis: var(--advanced-sidebar-width, var(--pane-sidebar-width));
+  width: var(--advanced-sidebar-width, var(--pane-sidebar-width));
+}
+
+.tag-manager-body.is-split .tag-manager-filter {
+  flex-basis: var(--tag-sidebar-width, var(--pane-sidebar-width));
+  width: var(--tag-sidebar-width, var(--pane-sidebar-width));
+}
+
+.advanced-workbench.is-split .advanced-sidebar,
+.tag-manager-body.is-split .tag-manager-filter {
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--pane-sidebar-background);
+  border-right: 1px solid var(--pane-divider);
+}
+
+.advanced-workbench.is-split .advanced-target-list,
+.tag-manager-body.is-split .tag-manager-chip-row {
+  gap: 1px;
+  /* Overlay scrollbars need no reserved gutter; rows span the sidebar. */
+  padding-right: 0;
+}
+
+.advanced-workbench.is-split .advanced-target-item,
+.tag-manager-body.is-split .tag-manager-chip {
+  min-height: var(--pane-item-height);
+  border-color: transparent;
+  border-radius: var(--pane-item-radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.advanced-workbench.is-split .advanced-target-item {
+  padding: 6px 10px;
+}
+
+.tag-manager-body.is-split .tag-manager-chip {
+  padding: 0 10px;
+}
+
+.advanced-workbench.is-split .advanced-target-item:hover:not(.active),
+.tag-manager-body.is-split .tag-manager-chip:hover:not(.active) {
+  background: var(--pane-item-hover);
+}
+
+.advanced-workbench.is-split .advanced-target-item.active,
+.tag-manager-body.is-split .tag-manager-chip.active {
+  background: var(--pane-item-selected);
+  border-color: transparent;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.advanced-workbench.is-split .advanced-target-name {
+  font-size: var(--font-size-base);
+  font-weight: 400;
+}
+
+.advanced-workbench.is-split .advanced-target-item.active .advanced-target-name {
+  font-weight: 500;
+}
+
+/* "New tag" keeps its dashed outline so it does not read as a tag. */
+.tag-manager-body.is-split .tag-manager-chip.is-create {
+  border: 1px dashed rgba(var(--accent-color-rgb), 0.22);
+  color: var(--text-secondary);
+}
+
+/* ---- Divider (PaneDivider): the pane border is the resting line; the
+   accent line and handle only show while the divider can be used. ---- */
+
+.pane-divider {
+  position: relative;
+  flex: 0 0 8px;
+  width: 8px;
+  /* Centre the drag area on the pane border without taking layout width. */
+  margin: 0 -4px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+/* Inside the right pane's left edge (the main list/detail split). */
+.pane-divider.is-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  margin: 0;
+}
+
+.pane-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: transparent;
+  transition: background var(--duration-base) ease;
+}
+
+.pane-divider.is-overlay::before {
+  left: 0;
+  transform: none;
+}
+
+.pane-divider-handle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accent-color-rgb), 0.45);
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
+}
+
+.pane-divider.is-overlay .pane-divider-handle {
+  left: 1px;
+}
+
+.pane-divider:hover::before,
+.pane-divider.active::before,
+.pane-divider:focus-visible::before {
+  background: rgba(var(--accent-color-rgb), 0.35);
+}
+
+.pane-divider:hover .pane-divider-handle,
+.pane-divider.active .pane-divider-handle,
+.pane-divider:focus-visible .pane-divider-handle {
+  opacity: 1;
+}
+
+body.is-pane-resizing,
+body.is-pane-resizing * {
+  cursor: col-resize;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- Content: the window background, like the settings content pane ---- */
+
+.advanced-workbench.is-split,
+.advanced-workbench.is-split .advanced-editor,
+.tag-manager-body.is-split .tag-manager-editor {
+  background: transparent;
+}
+
+.advanced-workbench.is-split .advanced-editor-toolbar,
+.tag-manager-body.is-split .tag-manager-editor .advanced-editor-toolbar {
+  min-height: 48px;
+  padding: 8px var(--pane-content-pad-x);
+  border-bottom: 1px solid var(--pane-divider);
+}
+
+.advanced-workbench.is-split .advanced-rule-list {
+  padding-inline: var(--pane-content-pad-x);
+}
+
+.tag-manager-body.is-split .tag-manager-editor .advanced-rule-list.tag-manager-items {
+  padding-inline: var(--pane-content-pad-x);
+}

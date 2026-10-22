@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- A menu-bar agent: no Dock tile and nothing on screen until the user
+       asks for a window. set_dock_visibility(false) at startup does the same
+       for `tauri dev`, which never reads this file. -->
+  <key>LSUIElement</key>
+  <true/>
+</dict>
+</plist>

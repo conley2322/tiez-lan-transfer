@@ -1,0 +1,249 @@
+body.compact-preview {
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
+/* Compact preview uses its own floating card.
+   Reset the global app shell (#root) to avoid an extra outer layer. */
+body.compact-preview #root /* design-ok: the preview window stays transparent under any theme, installed ones included */ {
+    width: auto !important;
+    height: auto !important;
+    display: inline-flex !important;
+    flex-direction: column;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+}
+
+body.compact-preview #root::before /* design-ok: the preview window stays transparent under any theme, installed ones included */ {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+}
+
+body.compact-preview #root > * /* design-ok: the preview window stays transparent under any theme, installed ones included */ {
+    position: static !important;
+    z-index: auto !important;
+}
+
+.compact-preview-root {
+    width: auto;
+    height: auto;
+    /* Keeps the card's border off the window edge, where fractional display
+       scaling cut its right and bottom sides. Must match CARD_INSET_PX in
+       CompactPreviewWindow.tsx, which adds it to the window size. */
+    padding: 1px;
+    box-sizing: content-box;
+    background: transparent;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    align-self: flex-start;
+    pointer-events: none;
+}
+
+.compact-preview-root .compact-popover-portal.compact-preview-window {
+    position: relative;
+    height: fit-content;
+    max-height: var(--preview-max-height, 560px);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    pointer-events: none;
+    box-sizing: border-box;
+    overflow: visible;
+    margin: 0;
+    box-shadow: none;
+    filter: none;
+}
+
+body.compact-preview .compact-popover-portal,
+.compact-preview-root .compact-popover-portal.compact-preview-window {
+    /* Shared popover defaults to 320px; drive width from JS instead. */
+    width: var(--preview-card-width, max-content);
+    min-width: 0;
+    max-width: min(540px, 80vw);
+}
+
+/* Keep compact preview visually single-layer. */
+.compact-preview-root .compact-popover-portal.compact-preview-window .popover-meta,
+.compact-preview-root .compact-popover-portal.compact-preview-window .popover-content,
+.compact-preview-root .compact-popover-portal.compact-preview-window .popover-divider {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.compact-preview-root .compact-popover-portal.compact-preview-image {
+}
+
+.compact-preview-root .compact-popover-portal.compact-preview-media {
+    min-width: 0;
+    max-width: 540px;
+}
+
+.compact-preview-root .compact-popover-portal.compact-preview-media .popover-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: var(--preview-media-fit-height, calc(var(--preview-max-height, 560px) - 64px));
+    white-space: normal;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.compact-preview-root .compact-popover-portal.compact-preview-media .popover-content img,
+.compact-preview-root .compact-popover-portal.compact-preview-media .popover-content video,
+.compact-preview-root .compact-popover-portal.compact-preview-media .popover-content > img,
+.compact-preview-root .compact-popover-portal.compact-preview-media .popover-content > video {
+    display: block;
+    max-width: 100%;
+    max-height: var(--preview-media-fit-height, calc(var(--preview-max-height, 560px) - 64px));
+    width: auto;
+    height: auto;
+    margin-inline: auto;
+    object-fit: contain;
+    border-radius: var(--radius-xs);
+    transition: opacity var(--duration-base) ease-out, transform var(--duration-base) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.compact-preview-root .popover-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+    margin-bottom: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+    flex: 0 0 auto;
+}
+
+.compact-preview-root .popover-meta .meta-row-source {
+    flex-shrink: 0;
+    max-width: none;
+}
+
+.compact-preview-root .popover-meta .meta-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.compact-preview-root .popover-meta .meta-row span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+}
+
+.compact-preview-root .popover-meta .source-app-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    display: block;
+    border-radius: var(--radius-2xs);
+    flex-shrink: 0;
+}
+
+.compact-preview-root .popover-meta .meta-dot {
+    flex-shrink: 0;
+    opacity: 0.35;
+}
+
+.compact-preview-root .popover-content.is-clipped {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+.compact-preview-root .popover-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(var(--preview-max-height, 560px) - 56px);
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: var(--clipboard-item-font-size);
+}
+
+.compact-preview-root .popover-content.is-short-text {
+    width: max-content;
+    max-width: 100%;
+    white-space: pre-wrap;
+}
+
+.compact-preview-root .popover-content.compact-preview-code {
+    font-family: var(--font-mono);
+    tab-size: 4;
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+    background: rgba(var(--shadow-rgb), 0.03);
+    border-radius: var(--radius-xs);
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+
+.compact-preview-root .compact-preview-file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.compact-preview-root .compact-preview-file-count,
+.compact-preview-root .compact-preview-file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.compact-preview-root .compact-preview-file-count {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.compact-preview-root .compact-preview-file-row svg {
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+}
+
+.compact-preview-root .compact-preview-file-row span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.compact-preview-root .compact-preview-file-more {
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+}
+
+.compact-preview-root .compact-preview-unavailable {
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
