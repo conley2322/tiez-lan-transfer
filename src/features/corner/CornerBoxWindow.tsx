@@ -25,6 +25,7 @@ type BoxState = {
     side: string;
     opacity: number;
     favoritesOnly: boolean;
+    shelfEnabled: boolean;
 };
 
 /** What the icon says once the drag is over: sent, failed, or just a hint. */
@@ -56,6 +57,9 @@ export default function CornerBoxWindow() {
     const sentAt = useRef(0);
     /** Pending "the ✓ has been up long enough" hide. */
     const hideTimer = useRef<number | null>(null);
+    /** Opened by the shake gesture: stays open while the file is dragged, even
+        if the pointer leaves the panel, because it is a shelf to come back to. */
+    const shelfOpen = useRef(false);
     const rowsBox = useRef<HTMLDivElement | null>(null);
     const rows = useMemo(() => visiblePeers(peers), [peers]);
     // The drag listener is registered once and lives across peer updates, so
@@ -73,7 +77,15 @@ export default function CornerBoxWindow() {
         invoke("set_corner_box_layout", { expanded, rows: rowCount.current }).catch(() => {});
     }, []);
 
+    // The shake can open the panel before the first peer list has arrived, and
+    // a vote cast while the panel is up can change its row count; either way
+    // the window has to match what is drawn.
+    useEffect(() => {
+        if (dragging) setLayout(true);
+    }, [dragging, rows.length, setLayout]);
+
     const closeBox = useCallback(() => {
+        shelfOpen.current = false;
         setDragging(false);
         setHoverId(null);
         setLayout(false);
@@ -98,6 +110,7 @@ export default function CornerBoxWindow() {
     const hideBox = useCallback(() => {
         cancelHide();
         sentAt.current = 0;
+        shelfOpen.current = false;
         setDragging(false);
         setHoverId(null);
         setNote(null);
@@ -130,11 +143,24 @@ export default function CornerBoxWindow() {
                 listen("corner-box-enabled-changed", () => {
                     cancelHide();
                     sentAt.current = 0;
+                    shelfOpen.current = false;
                     setDragging(false);
                     setHoverId(null);
                     setNote(null);
                     setOutcome(null);
                     poll();
+                }),
+                // 晃动两下: Rust sees the gesture and asks for the panel. The
+                // pointer is elsewhere, so this cannot rely on a drag-enter.
+                listen("corner-shake", () => {
+                    if (shelfOpen.current) {
+                        closeBox();
+                        return;
+                    }
+                    shelfOpen.current = true;
+                    setDragging(true);
+                    setHoverId(null);
+                    setLayout(true);
                 }),
                 // Rust shows the window when a system-wide file drag starts
                 // and hides it when the button comes up. This page never sits
@@ -144,12 +170,14 @@ export default function CornerBoxWindow() {
                         // A new drag: the previous ✓ or ! is not its result.
                         cancelHide();
                         sentAt.current = 0;
+                        shelfOpen.current = false;
                         setDragging(false);
                         setHoverId(null);
                         setNote(null);
                         setOutcome(null);
                         return;
                     }
+                    shelfOpen.current = false;
                     if (Date.now() - sentAt.current >= DROP_GRACE_MS) {
                         hideBox();
                         return;
@@ -183,7 +211,7 @@ export default function CornerBoxWindow() {
             window.clearInterval(timer);
             unlisteners.forEach((unlisten) => unlisten());
         };
-    }, [cancelHide, hideBox, setLayout]);
+    }, [cancelHide, closeBox, hideBox, setLayout]);
 
     useEffect(() => {
         const classList = document.documentElement.classList;
@@ -243,7 +271,9 @@ export default function CornerBoxWindow() {
                     return;
                 }
                 if (payload.type === "leave") {
-                    closeBox();
+                    // A shelf opened by the shake stays put; the user may be
+                    // moving a file toward it from the other side of the screen.
+                    if (!shelfOpen.current) closeBox();
                     return;
                 }
                 if (payload.type === "over") {

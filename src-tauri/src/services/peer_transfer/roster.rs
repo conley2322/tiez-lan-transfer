@@ -312,6 +312,7 @@ mod tests {
             created_at: 0,
             last_seen: 100_000,
             favorite: false,
+            name_locked: false,
         };
         assert!(is_online(&handle, 100_000 + ONLINE_WINDOW_MS));
         assert!(!is_online(&handle, 100_000 + ONLINE_WINDOW_MS + 1));

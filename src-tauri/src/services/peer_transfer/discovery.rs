@@ -8,7 +8,7 @@
 //! code.
 
 use std::collections::HashMap;
-use std::net::{IpAddr, Ipv6Addr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,14 @@ use super::roster;
 
 /// v6 multicast uses the next port: the v4 socket already holds this one.
 const MULTICAST_PORT: u16 = PEER_DISCOVERY_PORT + 1;
+/// IPv4 multicast fallback for networks that drop broadcast, the address
+/// LocalSend uses. Joining costs one option on the socket we already have.
+const MULTICAST_V4_GROUP: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 167);
+/// A beacon that arrives from a machine we can answer is answered once in a
+/// while by unicast: a firewall that drops one direction of broadcast still
+/// lets the other machine learn our address. The `reply` flag stops the two
+/// from answering each other forever.
+const REPLY_WINDOW: Duration = Duration::from_secs(3);
 
 /// 设置 → 文件传输 → 自动发现. Off means this machine neither announces
 /// itself nor listens: peers keep their last known address, so a machine whose
@@ -50,6 +58,10 @@ struct Beacon {
     port: u16,
     #[serde(default)]
     platform: String,
+    /// Set on the unicast answer to a beacon we heard. An answer must not be
+    /// answered again, or two machines would talk in a loop.
+    #[serde(default)]
+    reply: bool,
 }
 
 pub fn init(app: &AppHandle) {
@@ -61,6 +73,13 @@ fn run(app: AppHandle) {
     let v4 = match UdpSocket::bind(("0.0.0.0", PEER_DISCOVERY_PORT)) {
         Ok(socket) => {
             let _ = socket.set_broadcast(true);
+            // Multicast is the fallback for access points that drop broadcast.
+            // Join on every local address: interface 0 only gets the default
+            // route, which on a laptop is often not the LAN at all.
+            let _ = socket.join_multicast_v4(&MULTICAST_V4_GROUP, &Ipv4Addr::UNSPECIFIED);
+            for ip in local_v4_ips() {
+                let _ = socket.join_multicast_v4(&MULTICAST_V4_GROUP, &ip);
+            }
             Some(socket)
         }
         Err(err) => {
@@ -81,6 +100,11 @@ fn run(app: AppHandle) {
 
     let mut buffer = [0u8; 2048];
     let mut next_beacon = Instant::now();
+    let mut next_sender_refresh = Instant::now();
+    let mut lan = V4Broadcast::current();
+    // Source -> when we last answered it. Replies are a repair path, not a
+    // conversation: one every REPLY_WINDOW is plenty.
+    let mut replies: HashMap<IpAddr, Instant> = HashMap::new();
     // Read once per beacon rather than per tick: the setting is a row in SQLite
     // and this loop wakes every 120ms.
     let mut listening = is_enabled(&app);
@@ -89,11 +113,14 @@ fn run(app: AppHandle) {
             // The read timeout is the tick: it keeps receiving between beacons.
             let _ = socket.set_read_timeout(Some(Duration::from_millis(120)));
             if !listening {
+                // Nothing to read; without a wait here the loop would spin for
+                // three seconds between setting checks and burn a core.
+                std::thread::sleep(Duration::from_millis(200));
                 continue;
             }
             while let Ok((len, from)) = socket.recv_from(&mut buffer) {
                 if len > 0 {
-                    handle_beacon(&app, &buffer[..len], &source_ip(&from));
+                    handle_beacon(&app, &buffer[..len], &from, v4.as_ref(), &mut replies);
                 }
             }
         }
@@ -107,9 +134,69 @@ fn run(app: AppHandle) {
                 }
             }
             if enabled {
-                send_beacons(&app, v4.as_ref(), v6.as_ref());
+                if next_sender_refresh <= Instant::now() {
+                    next_sender_refresh = Instant::now() + Duration::from_secs(30);
+                    lan = V4Broadcast::current();
+                    // Wi-Fi may have come up since the socket was bound.
+                    if let Some(socket) = v4.as_ref() {
+                        for ip in local_v4_ips() {
+                            let _ = socket.join_multicast_v4(&MULTICAST_V4_GROUP, &ip);
+                        }
+                    }
+                }
+                send_beacons(&app, v4.as_ref(), v6.as_ref(), &lan);
             }
         }
+    }
+}
+
+fn local_v4_ips() -> Vec<Ipv4Addr> {
+    crate::services::file_transfer::get_available_ips()
+        .iter()
+        .filter_map(|ip| ip.parse::<Ipv4Addr>().ok())
+        .filter(|ip| !ip.is_loopback() && !ip.is_unspecified())
+        .collect()
+}
+
+/// One ephemeral socket per local IPv4, so `255.255.255.255` leaves every
+/// interface instead of only the default route. Sending from the interface's
+/// own address is what makes a multi-homed machine (Wi-Fi + Ethernet + a VPN)
+/// announce on the network the user actually cares about.
+struct V4Broadcast {
+    sockets: Vec<(Ipv4Addr, UdpSocket)>,
+}
+
+impl V4Broadcast {
+    fn current() -> Self {
+        let mut sockets = Vec::new();
+        for ip in local_v4_ips() {
+            if let Ok(socket) = UdpSocket::bind((ip, 0)) {
+                let _ = socket.set_broadcast(true);
+                sockets.push((ip, socket));
+            }
+        }
+        Self { sockets }
+    }
+
+    fn send(&self, body: &[u8]) -> usize {
+        let mut sent = 0;
+        for (_, socket) in &self.sockets {
+            // Both: limited broadcast is what older peers listen for, multicast
+            // survives APs that filter broadcast.
+            if socket
+                .send_to(body, (Ipv4Addr::BROADCAST, PEER_DISCOVERY_PORT))
+                .is_ok()
+            {
+                sent += 1;
+            }
+            if socket
+                .send_to(body, (MULTICAST_V4_GROUP, PEER_DISCOVERY_PORT))
+                .is_ok()
+            {
+                sent += 1;
+            }
+        }
+        sent
     }
 }
 
@@ -163,7 +250,7 @@ fn source_ip(address: &std::net::SocketAddr) -> IpAddr {
     }
 }
 
-fn beacon_payload(app: &AppHandle) -> Option<Vec<u8>> {
+fn beacon_payload(app: &AppHandle, reply: bool) -> Option<Vec<u8>> {
     let server = app.state::<ServerInfo>();
     let port = server.port.load(std::sync::atomic::Ordering::Relaxed);
     if port == 0 {
@@ -178,24 +265,31 @@ fn beacon_payload(app: &AppHandle) -> Option<Vec<u8>> {
         name: identity.display_name(),
         port,
         platform: identity.platform.clone(),
+        reply,
     })
     .ok()?;
     Some(body)
 }
 
-fn send_beacons(app: &AppHandle, v4: Option<&UdpSocket>, v6: Option<&UdpSocket>) {
-    let Some(body) = beacon_payload(app) else {
+fn send_beacons(
+    app: &AppHandle,
+    v4: Option<&UdpSocket>,
+    v6: Option<&UdpSocket>,
+    lan: &V4Broadcast,
+) {
+    let Some(body) = beacon_payload(app, false) else {
         return;
     };
     let mut sent = 0;
     if let Some(socket) = v4 {
         if socket
-            .send_to(&body, ("255.255.255.255", PEER_DISCOVERY_PORT))
+            .send_to(&body, (Ipv4Addr::BROADCAST, PEER_DISCOVERY_PORT))
             .is_ok()
         {
             sent += 1;
         }
     }
+    sent += lan.send(&body);
     if let Some(socket) = v6 {
         if let Ok(group) = PEER_MULTICAST_GROUP.parse::<Ipv6Addr>() {
             if socket.send_to(&body, (group, MULTICAST_PORT)).is_ok() {
@@ -204,7 +298,43 @@ fn send_beacons(app: &AppHandle, v4: Option<&UdpSocket>, v6: Option<&UdpSocket>)
         }
     }
     if sent > 0 {
-        note_health(app, |health| health.beacons_sent += sent);
+        note_health(app, |health| health.beacons_sent += sent as u64);
+    }
+}
+
+/// Answer a beacon by unicast, so a machine whose broadcast never reaches us
+/// still learns our address. Addressed to the fixed discovery port: the beacon
+/// itself may have left from a per-interface socket with an ephemeral port.
+fn answer_beacon(
+    app: &AppHandle,
+    v4: Option<&UdpSocket>,
+    replies: &mut HashMap<IpAddr, Instant>,
+    from_ip: &IpAddr,
+) {
+    let IpAddr::V4(ip) = from_ip else {
+        return;
+    };
+    let Some(socket) = v4 else {
+        return;
+    };
+    let now = Instant::now();
+    if replies
+        .get(from_ip)
+        .is_some_and(|last| now.duration_since(*last) < REPLY_WINDOW)
+    {
+        return;
+    }
+    let Some(body) = beacon_payload(app, true) else {
+        return;
+    };
+    if socket
+        .send_to(&body, (IpAddr::V4(*ip), PEER_DISCOVERY_PORT))
+        .is_ok()
+    {
+        replies.insert(*from_ip, now);
+        // Keep the map to machines actually around, not every IP ever seen.
+        replies.retain(|_, at| now.duration_since(*at) < REPLY_WINDOW * 4);
+        note_health(app, |health| health.beacons_sent += 1);
     }
 }
 
@@ -212,7 +342,13 @@ fn is_plausible_device_id(id: &str) -> bool {
     id.len() >= 8 && id.len() <= 64 && id.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-fn handle_beacon(app: &AppHandle, bytes: &[u8], from_ip: &IpAddr) {
+fn handle_beacon(
+    app: &AppHandle,
+    bytes: &[u8],
+    from: &SocketAddr,
+    v4: Option<&UdpSocket>,
+    replies: &mut HashMap<IpAddr, Instant>,
+) {
     let Ok(beacon) = serde_json::from_slice::<Beacon>(bytes) else {
         return;
     };
@@ -226,37 +362,73 @@ fn handle_beacon(app: &AppHandle, bytes: &[u8], from_ip: &IpAddr) {
     if ours.device_id == beacon.id {
         return;
     }
+    let from_ip = source_ip(from);
+    if !beacon.reply {
+        answer_beacon(app, v4, replies, &from_ip);
+    }
     let ip_text = from_ip.to_string();
 
     if db::is_trusted_sender(app, &beacon.id) {
-        if db::apply_seen(app, &beacon.id, &ip_text, beacon.port) {
+        // Paired machines belong in 设备与用户, not the nearby list. A pairing
+        // that happened seconds ago may have left an entry here.
+        let state = app.state::<DiscoveredState>();
+        let removed = {
+            let mut guard = state.0.lock().unwrap();
+            guard.remove(&beacon.id).is_some()
+        };
+        if removed {
+            let _ = app.emit("peer-discovered", discovered_views(app));
+        }
+        if db::apply_seen(app, &beacon.id, &beacon.name, &ip_text, beacon.port) {
             roster::notify_peers_changed(app);
         }
         return;
     }
 
-    // An unpaired machine nearby. Only the *set* of ids changing is worth an
-    // event: beacons arrive every few seconds.
+    // An unpaired machine nearby. A repaint is only worth an event when
+    // something visible changed: beacons arrive every few seconds.
     let state = app.state::<DiscoveredState>();
     let changed = {
         let mut guard = state.0.lock().unwrap();
-        let before: Vec<String> = discovered_ids(&guard);
         prune_discovered(&mut guard);
+        let before = discovered_snapshot(&guard);
         guard.insert(
             beacon.id.clone(),
             DiscoveredPeer {
                 device_id: beacon.id.clone(),
                 device_name: roster::clean_text(&beacon.name, 80),
-                ip: ip_text.clone(),
+                platform: beacon.platform.clone(),
+                ip: ip_text,
                 port: beacon.port,
                 seen_at: Instant::now(),
             },
         );
-        before != discovered_ids(&guard)
+        before != discovered_snapshot(&guard)
     };
     if changed {
         let _ = app.emit("peer-discovered", discovered_views(app));
     }
+}
+
+/// Everything the nearby list shows, sorted by id, so two snapshots compare by
+/// value rather than by the map's iteration order.
+fn discovered_snapshot(
+    guard: &HashMap<String, DiscoveredPeer>,
+) -> Vec<(String, String, String, String, u16)> {
+    let mut list: Vec<(String, String, String, String, u16)> = guard
+        .values()
+        .map(|peer| {
+            (
+                peer.device_id.clone(),
+                peer.device_name.clone(),
+                peer.platform.clone(),
+                peer.ip.clone(),
+                peer.port,
+            )
+        })
+        .collect();
+    list.sort();
+    list
 }
 
 fn discovered_ids(guard: &HashMap<String, DiscoveredPeer>) -> Vec<String> {
@@ -277,15 +449,28 @@ pub fn list_nearby_peers(app_handle: AppHandle) -> Vec<DiscoveredView> {
     discovered_views(&app_handle)
 }
 
+/// The one nearby machine a connect click targets, still fresh.
+pub fn discovered_peer(app: &AppHandle, device_id: &str) -> Option<DiscoveredPeer> {
+    let state = app.state::<DiscoveredState>();
+    let mut guard = state.0.lock().ok()?;
+    prune_discovered(&mut guard);
+    guard.get(device_id).cloned()
+}
+
 pub fn discovered_views(app: &AppHandle) -> Vec<DiscoveredView> {
     let state = app.state::<DiscoveredState>();
     let mut guard = state.0.lock().unwrap();
     prune_discovered(&mut guard);
     let mut views: Vec<DiscoveredView> = guard
         .values()
+        // A peer paired through a code (not a beacon) is still in this map
+        // until its next beacon arrives; showing it under 附近的电脑 for those
+        // seconds invites a second pairing with a machine already in the list.
+        .filter(|peer| !db::is_trusted_sender(app, &peer.device_id))
         .map(|peer| DiscoveredView {
             device_id: peer.device_id.clone(),
             device_name: peer.device_name.clone(),
+            platform: peer.platform.clone(),
             ip: peer.ip.clone(),
             port: peer.port,
         })
@@ -306,6 +491,7 @@ mod tests {
             name: "书房".to_string(),
             port: 28462,
             platform: "macos".to_string(),
+            reply: false,
         })
         .unwrap();
         let text = String::from_utf8(body).unwrap();
@@ -323,6 +509,16 @@ mod tests {
     }
 
     #[test]
+    fn an_older_beacon_without_the_new_fields_still_decodes() {
+        let parsed = serde_json::from_slice::<Beacon>(
+            b"{\"v\":1,\"id\":\"01234567\",\"name\":\"old\",\"port\":1}",
+        )
+        .expect("decodes");
+        assert!(!parsed.reply);
+        assert_eq!(parsed.platform, "");
+    }
+
+    #[test]
     fn the_multicast_group_is_a_site_local_v6_address() {
         let group = PEER_MULTICAST_GROUP.parse::<Ipv6Addr>().expect("parses");
         assert!(group.is_multicast());
@@ -337,6 +533,7 @@ mod tests {
             DiscoveredPeer {
                 device_id: "fresh".to_string(),
                 device_name: "a".to_string(),
+                platform: "macos".to_string(),
                 ip: "1.2.3.4".to_string(),
                 port: 1,
                 seen_at: Instant::now(),
@@ -347,6 +544,7 @@ mod tests {
             DiscoveredPeer {
                 device_id: "stale".to_string(),
                 device_name: "a".to_string(),
+                platform: "macos".to_string(),
                 ip: "1.2.3.4".to_string(),
                 port: 1,
                 seen_at: Instant::now() - DISCOVERED_TTL * 2,

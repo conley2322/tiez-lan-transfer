@@ -7,5 +7,10 @@
        for `tauri dev`, which never reads this file. -->
   <key>LSUIElement</key>
   <true/>
+  <!-- macOS 15 gates incoming LAN traffic (beacons, /p/*) behind the local
+       network permission; without a reason string the prompt never shows and
+       discovery silently gets nothing. -->
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>TieZ 需要在局域网内发现其他电脑并传输文件。</string>
 </dict>
 </plist>

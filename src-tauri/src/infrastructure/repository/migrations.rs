@@ -498,6 +498,20 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         conn.execute("INSERT INTO schema_migrations (version) VALUES (22)", [])?;
     }
 
+    // Migration 23: a peer's own name can change, and until the user here
+    // gives it a label of their own, the roster should follow whatever that
+    // machine announces. Existing rows start unlocked: the next beacon (or
+    // handshake) updates them, which is exactly what a renamed machine needs.
+    if current_version < 23 {
+        if !has_column(conn, "lan_peers", "name_locked")? {
+            conn.execute(
+                "ALTER TABLE lan_peers ADD COLUMN name_locked INTEGER NOT NULL DEFAULT 0",
+                [],
+            )?;
+        }
+        conn.execute("INSERT INTO schema_migrations (version) VALUES (23)", [])?;
+    }
+
     Ok(())
 }
 
@@ -566,7 +580,7 @@ mod tests {
                 row.get(0)
             })
             .expect("read schema version");
-        assert_eq!(version, 22);
+        assert_eq!(version, 23);
     }
 
     #[test]
@@ -741,6 +755,7 @@ mod tests {
             "credentials",
             "created_at",
             "last_seen",
+            "name_locked",
         ] {
             assert!(columns.iter().any(|c| c == expected), "missing {expected}");
         }
@@ -813,5 +828,53 @@ mod tests {
         conn.execute("DELETE FROM schema_migrations WHERE version >= 22", [])
             .unwrap();
         run_migrations(&conn).expect("rerun migration 22");
+    }
+
+    #[test]
+    fn migration_23_leaves_existing_peers_unlocked_so_their_names_follow() {
+        let conn = Connection::open_in_memory().expect("open database");
+        conn.execute_batch(
+            "
+            CREATE TABLE schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO schema_migrations(version) VALUES (22);
+            CREATE TABLE clipboard_history (id INTEGER PRIMARY KEY, note TEXT NOT NULL DEFAULT '');
+            CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE lan_peers (
+                device_id TEXT PRIMARY KEY,
+                device_name TEXT NOT NULL,
+                nickname TEXT NOT NULL DEFAULT '',
+                platform TEXT NOT NULL DEFAULT '',
+                last_ip TEXT NOT NULL DEFAULT '',
+                trusted INTEGER NOT NULL DEFAULT 0,
+                pair_source TEXT NOT NULL DEFAULT '',
+                avatar_color TEXT NOT NULL DEFAULT '',
+                credentials TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL,
+                last_seen INTEGER NOT NULL DEFAULT 0,
+                favorite INTEGER NOT NULL DEFAULT 0
+            );
+            INSERT INTO lan_peers(device_id, device_name, nickname, created_at)
+                VALUES ('abc', '旧名字 的 Windows 电脑', '旧名字', 1);
+            ",
+        )
+        .expect("create version 22 fixture");
+
+        run_migrations(&conn).expect("run update migrations");
+
+        let locked: i64 = conn
+            .query_row(
+                "SELECT name_locked FROM lan_peers WHERE device_id = 'abc'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("name_locked column");
+        assert_eq!(locked, 0, "a pre-existing peer follows its own new name");
+
+        conn.execute("DELETE FROM schema_migrations WHERE version >= 23", [])
+            .unwrap();
+        run_migrations(&conn).expect("rerun migration 23");
     }
 }

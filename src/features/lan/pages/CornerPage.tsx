@@ -18,6 +18,7 @@ export default function CornerPage({ ctx }: { ctx: SettingsCtx }) {
     const side = (corner?.side ?? "top-right") as Side;
     const opacity = corner?.opacity ?? 80;
     const favoritesOnly = corner?.favoritesOnly ?? false;
+    const shelfEnabled = corner?.shelfEnabled ?? true;
 
     const apply = (call: Promise<unknown>) => {
         call.catch(() => {}).finally(refreshCorner);
@@ -65,6 +66,13 @@ export default function CornerPage({ ctx }: { ctx: SettingsCtx }) {
                                 checked={favoritesOnly}
                                 onChange={(next) => apply(api.setCornerFavoritesOnly(next))}
                                 label={t("corner_fav")}
+                            />
+                        </LanRow>
+                        <LanRow label={t("corner_shelf")} hint={t("corner_shelf_hint")}>
+                            <LanSwitch
+                                checked={shelfEnabled}
+                                onChange={(next) => apply(api.setCornerShelfEnabled(next))}
+                                label={t("corner_shelf")}
                             />
                         </LanRow>
                     </>

@@ -659,21 +659,49 @@ html.window-settings #root {
   overflow: hidden;
 }
 
-.lan-nearby-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  font-size: var(--font-size-xs);
+.lan-nearby-hint {
+  margin: 0;
+  padding: 8px 10px 6px;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
 }
 
-.lan-nearby-row:last-child {
-  border-bottom: none;
+.lan-nearby-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease;
+}
+
+.lan-nearby-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.lan-nearby-row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.lan-nearby-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
 }
 
 .lan-nearby-name {
   color: var(--text-primary);
+  font-size: var(--font-size-sm);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -681,9 +709,20 @@ html.window-settings #root {
 }
 
 .lan-nearby-addr {
-  flex: none;
   color: var(--text-muted);
+  font-size: var(--font-size-2xs);
   font-family: var(--font-mono);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lan-nearby-action {
+  flex: none;
+  color: var(--accent-color);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
 }
 
 .lan-request {

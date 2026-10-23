@@ -35,6 +35,10 @@ pub const OPACITY_KEY: &str = "app.corner_box_opacity";
 /// When on, the box lists only the machines starred in 设备与用户. The full
 /// roster stays in 设置, and the drop target keeps its size either way.
 pub const FAVORITES_KEY: &str = "peer_corner_favorites_only";
+/// Shake the mouse during a drag to open the panel without first hovering the
+/// icon. On by default: the panel is otherwise unreachable while the native
+/// drag preview covers the corner.
+pub const SHELF_KEY: &str = "app.corner_shelf_enabled";
 
 /// The panel is a HUD the file has to be seen against; below this it is a
 /// ghost nobody can aim at.
@@ -44,14 +48,16 @@ const DEFAULT_OPACITY: u8 = 80;
 /// The icon is drawn at 40×40 with a transparent border around it, so a drag
 /// that lands slightly off still enters.
 const ICON_SIZE: f64 = 48.0;
-/// The 190px list panel from the prototype, with no transparent border: in the
-/// expanded state the window *is* the panel.
-const PANEL_WIDTH: f64 = 190.0;
-/// The panel above the rows: 12px padding + the 「松手放到头像上」 line.
-const PANEL_HEADER: f64 = 38.0;
+/// Wide enough for a full device name and a 34px avatar. The native drag
+/// preview is drawn by Finder and cannot be made smaller, so the targets have
+/// to be bigger than it rather than the other way round.
+const PANEL_WIDTH: f64 = 224.0;
+/// The panel above the rows: 10px padding + the 14px 「松手放到头像上」 line +
+/// the 10px gap under it.
+const PANEL_HEADER: f64 = 34.0;
 /// One `.corner-row` in corner-box.css.
-const ROW_HEIGHT: f64 = 40.0;
-const PANEL_FOOTER: f64 = 12.0;
+const ROW_HEIGHT: f64 = 48.0;
+const PANEL_FOOTER: f64 = 10.0;
 const EDGE_MARGIN: f64 = 12.0;
 const TOP_MARGIN: f64 = 6.0;
 /// `send_files_to_peers` caps a batch at 8 peers; a taller box than the screen
@@ -71,6 +77,7 @@ pub struct CornerBoxState {
     pub side: &'static str,
     pub opacity: u8,
     pub favorites_only: bool,
+    pub shelf_enabled: bool,
 }
 
 fn setting(app: &AppHandle, key: &str) -> Option<String> {
@@ -104,6 +111,12 @@ pub fn opacity(app: &AppHandle) -> u8 {
 /// default send path, and an empty list is a worse surprise than a long one.
 pub fn favorites_only(app: &AppHandle) -> bool {
     setting(app, FAVORITES_KEY).as_deref() == Some("true")
+}
+
+/// Anything but an explicit "false" keeps the shake gesture: it is how the
+/// panel is revealed while the drag preview covers the icon.
+pub fn shelf_enabled(app: &AppHandle) -> bool {
+    setting(app, SHELF_KEY).as_deref() != Some("false")
 }
 
 fn clamp_opacity(value: u8) -> u8 {
@@ -276,7 +289,21 @@ pub fn get_corner_box_state(app: AppHandle) -> CornerBoxState {
         side: side(&app),
         opacity: opacity(&app),
         favorites_only: favorites_only(&app),
+        shelf_enabled: shelf_enabled(&app),
     }
+}
+
+/// The native drag monitor saw the mouse wiggle twice during a drag. The page
+/// owns the drawing and the size, so this only tells it to expand; it answers
+/// with `set_corner_box_layout`, the same call a hover uses.
+pub fn open_shelf(app: &AppHandle) -> Result<(), String> {
+    if !is_enabled(app) || !shelf_enabled(app) {
+        return Ok(());
+    }
+    let window = ensure(app)?;
+    window.show().map_err(|error| error.to_string())?;
+    let _ = app.emit_to(CORNER_LABEL, "corner-shake", ());
+    Ok(())
 }
 
 /// The machine list the box draws: the whole roster, or only the ⭐ in it.
@@ -295,6 +322,14 @@ pub fn set_corner_box_favorites_only(app: AppHandle, favorites_only: bool) -> Re
     // just un-starred cannot still be a drop target.
     roster_changed(&app);
     Ok(())
+}
+
+/// 设置 → 角落拖拽框 → 晃动唤出暂存架.
+#[tauri::command]
+pub fn set_corner_box_shelf_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    persist(&app, SHELF_KEY, if enabled { "true" } else { "false" })?;
+    app.emit("corner-shelf-changed", enabled)
+        .map_err(|error| error.to_string())
 }
 
 /// The 不透明度 slider. The page re-reads `get_corner_box_state` on this event.

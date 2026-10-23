@@ -17,6 +17,9 @@ pub const BEACON_INTERVAL: std::time::Duration = std::time::Duration::from_secs(
 pub const DISCOVERED_TTL: std::time::Duration = std::time::Duration::from_secs(15);
 /// How long either side of a pairing exchange waits for the other.
 pub const PAIR_REQUEST_TTL: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+/// A nearby connect is clicked, not typed: the asker is watching a spinner, so
+/// the card waits a minute rather than a pasted code's five.
+pub const CONNECT_REQUEST_TTL: std::time::Duration = std::time::Duration::from_secs(60);
 
 /// A peer's rotating secrets, kept in one encrypted column.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,6 +61,11 @@ pub struct PeerHandle {
     /// ⭐ in the settings list: pinned to the top and the only machines the
     /// corner box shows when 「仅收藏用户」 is on.
     pub favorite: bool,
+    /// True once the user renamed this peer here. Until then `device_name` is
+    /// whatever the peer last announced, and a beacon or handshake may replace
+    /// it — that is how a machine that changed its own name stays current
+    /// everywhere without anyone re-pairing.
+    pub name_locked: bool,
 }
 
 /// What the window may see: everything except the transfer secrets.
@@ -184,6 +192,31 @@ pub struct PeerHandshake {
     pub key: String,
 }
 
+/// The unauthenticated ask behind clicking a nearby avatar. It carries only
+/// what a beacon already carries, plus the asker's public key so the answer
+/// (which includes this machine's pairing code) can be sealed back to it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectAsk {
+    pub group: String,
+    pub device_id: String,
+    pub device_name: String,
+    #[serde(default)]
+    pub nickname: String,
+    pub platform: String,
+    pub port: u16,
+    /// base64url of the asker's 32-byte peer key.
+    pub key: String,
+}
+
+/// The sealed answer to a `ConnectAsk`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectReply {
+    /// "accept" (carries `code`) | "reject" | "already" | "timeout".
+    pub status: String,
+    #[serde(default)]
+    pub code: String,
+}
+
 /// One file in a group a peer wants to send, before it has sent anything.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InviteFile {
@@ -247,6 +280,10 @@ pub struct PairRequestView {
     pub verify_word: String,
     /// Seconds left before the request is dropped.
     pub expires_in: i64,
+    /// "pair" (a sealed code handshake) or "connect" (someone nearby clicked
+    /// this machine's avatar). A connect has no verify word until the other
+    /// side's code comes back, so the card explains itself with `kind`.
+    pub kind: String,
 }
 
 impl PendingPairing {
@@ -265,6 +302,7 @@ impl PendingPairing {
             ip: self.peer_ip.clone(),
             verify_word: self.verify_word.clone(),
             expires_in: self.remaining(),
+            kind: "pair".to_string(),
         }
     }
 
@@ -332,6 +370,7 @@ pub struct ReceiveRequestsState(pub Mutex<HashMap<String, PendingReceive>>);
 pub struct DiscoveredPeer {
     pub device_id: String,
     pub device_name: String,
+    pub platform: String,
     pub ip: String,
     pub port: u16,
     pub seen_at: Instant,
@@ -342,11 +381,63 @@ pub struct DiscoveredPeer {
 pub struct DiscoveredView {
     pub device_id: String,
     pub device_name: String,
+    pub platform: String,
     pub ip: String,
     pub port: u16,
 }
 
 pub struct DiscoveredState(pub Mutex<HashMap<String, DiscoveredPeer>>);
+
+/// A nearby machine that clicked this one's avatar. Nothing secret has crossed
+/// the wire yet: accepting is what lets this machine hand back its pairing
+/// code, and the sealed handshake that follows completes the pairing.
+#[derive(Debug)]
+pub struct PendingConnect {
+    pub group: String,
+    pub device_id: String,
+    pub device_name: String,
+    pub nickname: String,
+    pub platform: String,
+    pub ip: String,
+    pub port: u16,
+    /// The asker's public key, so the pairing code can be sealed back to it.
+    pub peer_key: String,
+    pub expires_at: Instant,
+    pub responder: Option<tokio::sync::oneshot::Sender<bool>>,
+}
+
+impl PendingConnect {
+    fn remaining(&self) -> i64 {
+        self.expires_at
+            .saturating_duration_since(Instant::now())
+            .as_secs() as i64
+    }
+
+    pub fn view(&self) -> PairRequestView {
+        PairRequestView {
+            device_id: self.device_id.clone(),
+            device_name: self.device_name.clone(),
+            nickname: self.nickname.clone(),
+            platform: self.platform.clone(),
+            ip: self.ip.clone(),
+            verify_word: String::new(),
+            expires_in: self.remaining(),
+            kind: "connect".to_string(),
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        Instant::now() >= self.expires_at
+    }
+}
+
+pub struct ConnectRequestsState(pub Mutex<HashMap<String, PendingConnect>>);
+
+/// Device ids whose user accepted a nearby connect, and when. The sealed
+/// handshake that follows arrives within seconds; a minute is enough to finish
+/// it without raising a second prompt, and short enough not to approve a
+/// different machine that happens to reuse the id much later.
+pub struct ApprovedConnectsState(pub Mutex<HashMap<String, Instant>>);
 
 /// What the discovery thread can honestly report about itself: whether either
 /// channel bound, and whether traffic has actually crossed each one since the

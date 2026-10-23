@@ -8,7 +8,7 @@
 //! A code that was pasted twice only costs one more confirmation.
 
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use tauri::{AppHandle, Emitter, Manager};
@@ -17,9 +17,12 @@ use crate::services::file_transfer::sealed::{self, LanKey};
 use crate::services::file_transfer::ServerInfo;
 
 use super::db;
+use super::discovery;
 use super::identity;
 use super::models::{
-    PendingPairing, PairRequestView, PeerHandshake, PeerIdentity, PairingState, PAIR_REQUEST_TTL,
+    ApprovedConnectsState, ConnectAsk, ConnectReply, ConnectRequestsState, PairRequestView,
+    PairingState, PeerHandshake, PeerIdentity, PendingPairing, CONNECT_REQUEST_TTL,
+    PAIR_REQUEST_TTL,
 };
 use super::roster;
 
@@ -210,9 +213,19 @@ pub async fn pair_with_code(app_handle: AppHandle, code: String) -> Result<PairR
         return Err("这是本机自己的配对码".to_string());
     }
     ensure_server(&app_handle).await?;
+    pair_with_target(&app_handle, target).await
+}
 
+/// The sealed handshake both pairing paths end with: a code, a request, and
+/// either immediate acceptance (the other side already knows us, or its user
+/// just approved a nearby connect) or a pending request on its screen.
+async fn pair_with_target(
+    app_handle: &AppHandle,
+    target: roster::PairTarget,
+) -> Result<PairResult, String> {
+    let ours = identity::current(app_handle);
     let group = uuid::Uuid::new_v4().as_simple().to_string();
-    let message = self_handshake(&app_handle, "request", &group);
+    let message = self_handshake(app_handle, "request", &group);
     let verify_word = roster::verify_word(
         (&ours.device_id, &ours.key),
         (&target.device_id, &target.key),
@@ -243,9 +256,9 @@ pub async fn pair_with_code(app_handle: AppHandle, code: String) -> Result<PairR
             .ok_or("对方的配对信息不完整")?;
             // A re-pair keeps the name this machine gave the peer; `save_peer`
             // is what carries the local fields over.
-            db::save_peer(&app_handle, peer)?;
-            remove_pending(&app_handle, &group);
-            roster::notify_peers_changed(&app_handle);
+            db::save_peer(app_handle, peer)?;
+            remove_pending(app_handle, &group);
+            roster::notify_peers_changed(app_handle);
             let _ = app_handle.emit(
                 "peer-pair-done",
                 serde_json::json!({ "deviceId": reply.device_id, "nickname": reply.nickname }),
@@ -278,7 +291,7 @@ pub async fn pair_with_code(app_handle: AppHandle, code: String) -> Result<PairR
                 expires_at: std::time::Instant::now() + PAIR_REQUEST_TTL,
             };
             let view = pending.view();
-            insert_pending(&app_handle, pending);
+            insert_pending(app_handle, pending);
             Ok(PairResult {
                 status: "pending".to_string(),
                 device_id: view.device_id,
@@ -290,6 +303,202 @@ pub async fn pair_with_code(app_handle: AppHandle, code: String) -> Result<PairR
         "reject" => Err("对方拒绝了这个配对请求".to_string()),
         other => Err(format!("对方返回了无法识别的状态（{other}）")),
     }
+}
+
+/// Approved nearby connects are one-shot: the sealed handshake that follows
+/// uses this to skip a second prompt, and the entry is consumed when it does.
+const APPROVED_CONNECT_TTL: Duration = Duration::from_secs(120);
+/// More asks than this waiting at once is someone hammering the port, not a
+/// user clicking avatars.
+const MAX_PENDING_CONNECTS: usize = 4;
+
+/// The command behind clicking an avatar in 附近设备.
+///
+/// The card on the other machine carries no verify word: the user there is
+/// approving *this machine, this name, this address*. Only after that does its
+/// pairing code travel, sealed with the key this ask carried, and the ordinary
+/// sealed handshake finishes the job.
+#[tauri::command]
+pub async fn connect_nearby_peer(
+    app_handle: AppHandle,
+    device_id: String,
+) -> Result<PairResult, String> {
+    let nearby = discovery::discovered_peer(&app_handle, &device_id)
+        .ok_or_else(|| "这台设备已经不在附近了，请稍后再试".to_string())?;
+    ensure_server(&app_handle).await?;
+    let ours = identity::current(&app_handle);
+    let ask = ConnectAsk {
+        group: uuid::Uuid::new_v4().as_simple().to_string(),
+        device_id: ours.device_id.clone(),
+        device_name: ours.device_name.clone(),
+        nickname: ours.nickname.clone(),
+        platform: ours.platform.clone(),
+        port: server_port(&app_handle),
+        key: sealed::encode_key(&ours.key),
+    };
+    let reply = ask_connect(&nearby.ip, nearby.port, &ours.key, &ask).await?;
+    match reply.status.as_str() {
+        "accept" => {
+            let target = roster::parse_pairing_code(&reply.code)?;
+            if target.device_id != nearby.device_id {
+                return Err("对方返回的配对信息与这台设备不一致".to_string());
+            }
+            // Reach it at the address the click used: the code may name another
+            // interface of the same machine that this network cannot route to.
+            let target = roster::PairTarget {
+                ip: nearby.ip,
+                port: nearby.port,
+                ..target
+            };
+            pair_with_target(&app_handle, target).await
+        }
+        "reject" => Err("对方拒绝了这个连接请求".to_string()),
+        "timeout" => Err("对方没有在时间内确认".to_string()),
+        "already" => Err(
+            "对方已经有本机的配对记录，但本机上没有对方；请先在对方设备上删除本机，再重新连接"
+                .to_string(),
+        ),
+        other => Err(format!("对方返回了无法识别的状态（{other}）")),
+    }
+}
+
+async fn ask_connect(
+    ip: &str,
+    port: u16,
+    our_key: &LanKey,
+    ask: &ConnectAsk,
+) -> Result<ConnectReply, String> {
+    let body = serde_json::to_vec(ask).map_err(|error| format!("连接请求无法编码：{error}"))?;
+    let client = reqwest::Client::builder()
+        .timeout(CONNECT_REQUEST_TTL + Duration::from_secs(15))
+        .build()
+        .map_err(|error| format!("连接请求无法发出：{error}"))?;
+    let response = client
+        .post(format!("http://{ip}:{port}/p/connect"))
+        .header(CONTENT_TYPE, "application/json")
+        .body(body)
+        .send()
+        .await
+        .map_err(|error| format!("连不上 {ip}:{port}（{error}）"))?;
+    let status = response.status();
+    if status == reqwest::StatusCode::SERVICE_UNAVAILABLE {
+        return Err("对方暂时不接收连接（可能开启了「暂停接收」）".to_string());
+    }
+    if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        return Err("对方正在等别人确认，请稍后再试".to_string());
+    }
+    if !status.is_success() {
+        return Err(format!("对方没有接受这个请求（{status}）"));
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("读不到对方的回复：{error}"))?;
+    let plain = sealed::open(our_key, "connect", &bytes).ok_or("对方的回复无法解读")?;
+    serde_json::from_slice(&plain).map_err(|error| format!("对方的回复无法识别：{error}"))
+}
+
+/// Store an inbound ask and hand the HTTP handler the channel its user's answer
+/// will arrive on. `None` = too many machines already waiting.
+pub fn record_connect_ask(
+    app: &AppHandle,
+    ask: &ConnectAsk,
+    ip: String,
+) -> Option<(PairRequestView, tokio::sync::oneshot::Receiver<bool>)> {
+    let state = app.state::<ConnectRequestsState>();
+    let mut guard = state.0.lock().ok()?;
+    // Dropping an expired entry drops its sender, so its request answers
+    // "timeout" instead of hanging around.
+    guard.retain(|_, pending| !pending.is_expired());
+    if !guard.contains_key(&ask.device_id) && guard.len() >= MAX_PENDING_CONNECTS {
+        return None;
+    }
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let pending = super::models::PendingConnect {
+        group: ask.group.clone(),
+        device_id: ask.device_id.clone(),
+        device_name: roster::clean_text(&ask.device_name, 80),
+        nickname: roster::clean_text(&ask.nickname, 40),
+        platform: roster::clean_text(&ask.platform, 20),
+        ip,
+        port: ask.port,
+        peer_key: ask.key.clone(),
+        expires_at: Instant::now() + CONNECT_REQUEST_TTL,
+        responder: Some(sender),
+    };
+    let view = pending.view();
+    // A second ask from the same machine replaces the card rather than
+    // stacking; the older request wakes up and reports a timeout.
+    guard.insert(ask.device_id.clone(), pending);
+    Some((view, receiver))
+}
+
+/// Remove the ask once its HTTP request has an answer, whichever way it went.
+pub fn finish_connect_ask(app: &AppHandle, device_id: &str) {
+    if let Ok(mut guard) = app.state::<ConnectRequestsState>().0.lock() {
+        guard.remove(device_id);
+    }
+}
+
+/// The user slid to accept: let the waiting request hand back the pairing code.
+pub fn approve_connect(app: &AppHandle, device_id: &str) {
+    let now = Instant::now();
+    if let Ok(mut guard) = app.state::<ApprovedConnectsState>().0.lock() {
+        guard.retain(|_, at| now.duration_since(*at) < APPROVED_CONNECT_TTL);
+        guard.insert(device_id.to_string(), now);
+    }
+}
+
+/// The sealed handshake that follows an accepted connect, once.
+pub fn take_approved_connect(app: &AppHandle, device_id: &str) -> bool {
+    let state = app.state::<ApprovedConnectsState>();
+    let Ok(mut guard) = state.0.lock() else {
+        return false;
+    };
+    match guard.remove(device_id) {
+        Some(at) => at.elapsed() < APPROVED_CONNECT_TTL,
+        None => false,
+    }
+}
+
+/// Drop expired asks and expose the rest to the settings list and the float.
+fn connect_inbound_views(app: &AppHandle) -> Vec<PairRequestView> {
+    let state = app.state::<ConnectRequestsState>();
+    let Ok(mut guard) = state.0.lock() else {
+        return Vec::new();
+    };
+    guard.retain(|_, pending| !pending.is_expired());
+    let mut views: Vec<PairRequestView> = guard.values().map(|pending| pending.view()).collect();
+    views.sort_by(|a, b| a.device_id.cmp(&b.device_id));
+    views
+}
+
+/// The user's answer to a nearby connect. Accepting only hands the waiting
+/// request permission to return this machine's code; the pairing finishes when
+/// that machine's sealed handshake arrives.
+fn answer_connect(app: &AppHandle, device_id: &str, accept: bool) -> Result<(), String> {
+    let state = app.state::<ConnectRequestsState>();
+    let mut guard = state.0.lock().map_err(|_| "连接请求状态不可用".to_string())?;
+    let Some(pending) = guard.get_mut(device_id) else {
+        return Err("这个连接请求已经不在了".to_string());
+    };
+    if pending.is_expired() {
+        guard.remove(device_id);
+        return Err("这个连接请求已经过期了".to_string());
+    }
+    let Some(sender) = pending.responder.take() else {
+        return Err("这个连接请求已经在处理了".to_string());
+    };
+    let _ = sender.send(accept);
+    if !accept {
+        guard.remove(device_id);
+        drop(guard);
+        let _ = app.emit(
+            "peer-pair-rejected",
+            serde_json::json!({ "deviceId": device_id }),
+        );
+    }
+    Ok(())
 }
 
 /// Everything the window needs to show: both directions.
@@ -313,6 +522,7 @@ pub fn list_pair_requests(app_handle: AppHandle) -> PairingViews {
         .filter(|pending| pending.direction == "in")
         .map(PendingPairing::view)
         .collect();
+    inbound.extend(connect_inbound_views(&app_handle));
     let mut outbound: Vec<PairRequestView> = guard
         .values()
         .filter(|pending| pending.direction == "out")
@@ -332,7 +542,9 @@ pub async fn respond_pair_request(
     accept: bool,
 ) -> Result<(), String> {
     let Some(pending) = pending_for(&app_handle, &device_id, "in") else {
-        return Err("这个配对请求已经不在了".to_string());
+        // A nearby connect is not in the pairing map: its HTTP request is
+        // still open, waiting on the sender we stored with the card.
+        return answer_connect(&app_handle, &device_id, accept);
     };
     if accept {
         let key = sealed::decode_key(&pending.peer_key).ok_or("对方的密钥无法识别")?;
@@ -397,11 +609,14 @@ pub fn inbound_views(app: &AppHandle) -> Vec<PairRequestView> {
     let Ok(guard) = state.0.lock() else {
         return Vec::new();
     };
-    guard
+    let mut views: Vec<PairRequestView> = guard
         .values()
         .filter(|pending| pending.direction == "in")
         .map(PendingPairing::view)
-        .collect()
+        .collect();
+    views.extend(connect_inbound_views(app));
+    views.sort_by(|a, b| a.device_id.cmp(&b.device_id));
+    views
 }
 
 /// Called by the handshake handler when the answer reaches a request we sent.

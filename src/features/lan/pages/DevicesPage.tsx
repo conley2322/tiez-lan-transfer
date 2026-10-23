@@ -41,6 +41,8 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
     const [check, setCheck] = useState<api.SelfCheck | null>(null);
     const [checking, setChecking] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
+    const [connectingId, setConnectingId] = useState<string | null>(null);
+    const [nearbyNotice, setNearbyNotice] = useState<string | null>(null);
 
     const discoveryOn = settings["peer_discovery_enabled"] !== "false";
 
@@ -112,6 +114,26 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
                 refreshRequests();
                 refreshPeers();
             });
+    };
+
+    // One click on a nearby machine asks it directly. The other side gets a
+    // card; no code is read out, so this waits for their answer.
+    const connectNearby = (item: api.NearbyPeer) => {
+        setNearbyNotice(null);
+        setConnectingId(item.deviceId);
+        api.connectNearby(item.deviceId)
+            .then((result) => {
+                setNearbyNotice(
+                    t("nearby_connected", { name: result.deviceName || item.deviceName }),
+                );
+                refreshPeers();
+                refreshNearby();
+                refreshCorner();
+            })
+            .catch((error) =>
+                setNearbyNotice(t("nearby_failed", { reason: String(error) })),
+            )
+            .finally(() => setConnectingId(null));
     };
 
     const star = (deviceId: string, value: boolean) => {
@@ -301,7 +323,11 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
                                             onClick={() => {
                                                 setEditor({
                                                     deviceId: peer.deviceId,
-                                                    nickname: peer.nickname,
+                                                    // Seed with what the row shows: an
+                                                    // unlocked peer has no local label,
+                                                    // and opening an empty box would
+                                                    // read as "the name was lost".
+                                                    nickname: peer.nickname || peer.deviceName,
                                                     avatarColor: peer.avatarColor,
                                                     self: false,
                                                 });
@@ -343,34 +369,47 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
 
             {requests.inbound.length > 0 || requests.outbound.length > 0 ? (
                 <LanCard title={t("float_pair_list")}>
-                    {requests.inbound.map((request) => (
-                        <div className="lan-request" key={`in-${request.deviceId}`}>
-                            <div className="lan-request-info">
-                                <div className="lan-peer-name">{request.nickname || request.deviceName}</div>
-                                <div className="lan-peer-meta">
-                                    {t("float_pair_body", {
-                                        name: request.nickname || request.deviceName,
-                                    })}
+                    {requests.inbound.map((request) => {
+                        const name = request.nickname || request.deviceName;
+                        const isConnect = request.kind === "connect";
+                        return (
+                            <div className="lan-request" key={`in-${request.deviceId}`}>
+                                <div className="lan-request-info">
+                                    <div className="lan-peer-name">{name}</div>
+                                    <div className="lan-peer-meta">
+                                        {isConnect
+                                            ? t("float_connect_body", { name })
+                                            : t("float_pair_body", { name })}
+                                    </div>
+                                    <div className="lan-peer-meta">
+                                        {platformBadge(request.platform)} · {request.ip} ·{" "}
+                                        {t("float_expires", { sec: request.expiresIn })}
+                                    </div>
+                                    {isConnect ? null : (
+                                        <div className="lan-peer-meta">
+                                            {t("float_word")}
+                                            <span className="lan-word">{request.verifyWord}</span>
+                                            {t("float_word_hint")}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="lan-peer-meta">
-                                    {t("float_word")}
-                                    <span className="lan-word">{request.verifyWord}</span>
-                                    {t("float_word_hint")}
+                                <div className="lan-request-actions">
+                                    <LanButton
+                                        variant="primary"
+                                        onClick={() => answer(request.deviceId, true)}
+                                    >
+                                        {isConnect ? t("accept") : t("save")}
+                                    </LanButton>
+                                    <LanButton
+                                        variant="danger"
+                                        onClick={() => answer(request.deviceId, false)}
+                                    >
+                                        {t("float_reject")}
+                                    </LanButton>
                                 </div>
                             </div>
-                            <div className="lan-request-actions">
-                                <LanButton
-                                    variant="primary"
-                                    onClick={() => answer(request.deviceId, true)}
-                                >
-                                    {t("save")}
-                                </LanButton>
-                                <LanButton variant="danger" onClick={() => answer(request.deviceId, false)}>
-                                    {t("float_reject")}
-                                </LanButton>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {requests.outbound.map((request) => (
                         <div className="lan-request" key={`out-${request.deviceId}`}>
                             <div className="lan-request-info">
@@ -388,7 +427,7 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
                 </LanCard>
             ) : null}
 
-            <LanCard title={t("discovery_enable")}>
+            <LanCard title={t("nearby_title")}>
                 <LanRow label={t("discovery_enable")} hint={t("discovery_hint")}>
                     <LanSwitch
                         checked={discoveryOn}
@@ -396,16 +435,44 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
                         label={t("discovery_enable")}
                     />
                 </LanRow>
-                {discoveryOn && nearby.length > 0 ? (
+                {discoveryOn ? (
                     <div className="lan-nearby">
+                        <p className="lan-nearby-hint">{t("nearby_click_hint")}</p>
+                        {nearby.length === 0 ? (
+                            <p className="lan-empty">{t("nearby_empty")}</p>
+                        ) : null}
                         {nearby.map((item) => (
-                            <div className="lan-nearby-row" key={item.deviceId}>
-                                <span className="lan-nearby-name">{item.deviceName}</span>
-                                <span className="lan-nearby-addr">
-                                    {item.ip}:{item.port}
+                            <button
+                                type="button"
+                                className="lan-nearby-row"
+                                key={item.deviceId}
+                                disabled={connectingId !== null}
+                                onClick={() => connectNearby(item)}
+                            >
+                                <LanAvatar
+                                    peer={{
+                                        nickname: "",
+                                        deviceName: item.deviceName,
+                                        deviceId: item.deviceId,
+                                        avatarColor: "",
+                                    }}
+                                />
+                                <span className="lan-nearby-info">
+                                    <span className="lan-nearby-name">{item.deviceName}</span>
+                                    <span className="lan-nearby-addr">
+                                        {platformBadge(item.platform)} · {item.ip}
+                                    </span>
                                 </span>
-                            </div>
+                                <span className="lan-nearby-action">
+                                    {connectingId === item.deviceId
+                                        ? t("nearby_connecting")
+                                        : t("nearby_connect")}
+                                </span>
+                            </button>
                         ))}
+                        {nearbyNotice ? (
+                            <p className="lan-inline-result">{nearbyNotice}</p>
+                        ) : null}
                     </div>
                 ) : null}
                 <div className="lan-selfcheck">
@@ -430,7 +497,10 @@ export default function DevicesPage({ ctx }: { ctx: SettingsCtx }) {
 
             {editor ? (
                 <div className="lan-editor">
-                    <LanRow label={t("nickname_label")}>
+                    <LanRow
+                        label={t("nickname_label")}
+                        hint={editor.self ? undefined : t("nickname_hint")}
+                    >
                         <input
                             className="lan-input"
                             value={editor.nickname}

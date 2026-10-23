@@ -21,13 +21,16 @@ pub struct StoredPeer {
     /// ⭐ — set by the user, and the only thing in this row that a peer never
     /// learns about itself.
     pub favorite: bool,
+    /// True after a local rename: beacons and handshakes then stop replacing
+    /// the name with the one the peer announces.
+    pub name_locked: bool,
 }
 
 pub struct SqlitePeerRepository {
     conn: std::sync::Arc<std::sync::Mutex<Connection>>,
 }
 
-const COLUMNS: &str = "device_id, device_name, nickname, platform, last_ip, trusted, pair_source, avatar_color, credentials, created_at, last_seen, favorite";
+const COLUMNS: &str = "device_id, device_name, nickname, platform, last_ip, trusted, pair_source, avatar_color, credentials, created_at, last_seen, favorite, name_locked";
 
 fn row_to_peer(row: &rusqlite::Row<'_>) -> Result<StoredPeer> {
     Ok(StoredPeer {
@@ -43,6 +46,7 @@ fn row_to_peer(row: &rusqlite::Row<'_>) -> Result<StoredPeer> {
         created_at: row.get(9)?,
         last_seen: row.get(10)?,
         favorite: row.get::<_, i64>(11)? != 0,
+        name_locked: row.get::<_, i64>(12)? != 0,
     })
 }
 
@@ -82,8 +86,9 @@ impl SqlitePeerRepository {
         conn.execute(
             "INSERT INTO lan_peers
                 (device_id, device_name, nickname, platform, last_ip, trusted,
-                 pair_source, avatar_color, credentials, created_at, last_seen, favorite)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+                 pair_source, avatar_color, credentials, created_at, last_seen, favorite,
+                 name_locked)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
              ON CONFLICT(device_id) DO UPDATE SET
                  device_name = excluded.device_name,
                  nickname = excluded.nickname,
@@ -94,7 +99,8 @@ impl SqlitePeerRepository {
                  avatar_color = excluded.avatar_color,
                  credentials = excluded.credentials,
                  created_at = excluded.created_at,
-                 last_seen = excluded.last_seen",
+                 last_seen = excluded.last_seen,
+                 name_locked = excluded.name_locked",
             params![
                 peer.device_id,
                 peer.device_name,
@@ -107,7 +113,8 @@ impl SqlitePeerRepository {
                 credentials,
                 peer.created_at,
                 peer.last_seen,
-                peer.favorite as i64
+                peer.favorite as i64,
+                peer.name_locked as i64
             ],
         )?;
         Ok(())
@@ -145,21 +152,44 @@ impl SqlitePeerRepository {
     }
 
     /// UDP beacons only ever refresh the address and the seen time; they must
-    /// not blank the credentials a pairing exchange delivered.
-    pub fn update_seen(&self, device_id: &str, ip: &str, seen_ms: i64) -> Result<()> {
+    /// not blank the credentials a pairing exchange delivered. `announced` is
+    /// the name the peer claims for itself: when the user here has not renamed
+    /// that peer, the row follows it, so a machine that changes its name stays
+    /// current on every other machine.
+    pub fn update_presence(
+        &self,
+        device_id: &str,
+        ip: &str,
+        seen_ms: i64,
+        announced: Option<&str>,
+    ) -> Result<()> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE lan_peers SET last_ip = ?2, last_seen = ?3 WHERE device_id = ?1",
-            params![device_id, ip, seen_ms],
-        )?;
+        match announced {
+            Some(name) => conn.execute(
+                "UPDATE lan_peers
+                    SET last_ip = ?2, last_seen = ?3, device_name = ?4, nickname = ''
+                  WHERE device_id = ?1",
+                params![device_id, ip, seen_ms, name],
+            )?,
+            None => conn.execute(
+                "UPDATE lan_peers SET last_ip = ?2, last_seen = ?3 WHERE device_id = ?1",
+                params![device_id, ip, seen_ms],
+            )?,
+        };
         Ok(())
     }
 
-    /// Settings edits for the user-visible fields.
+    /// Settings edits for the user-visible fields. A non-empty nickname is a
+    /// local label and locks the name; clearing it unlocks it again, and the
+    /// next beacon puts the peer's own name back.
     pub fn update_profile(&self, device_id: &str, nickname: &str, avatar_color: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "UPDATE lan_peers SET nickname = ?2, avatar_color = ?3 WHERE device_id = ?1",
+            "UPDATE lan_peers
+                SET nickname = ?2,
+                    avatar_color = ?3,
+                    name_locked = CASE WHEN ?2 <> '' THEN 1 ELSE 0 END
+              WHERE device_id = ?1",
             params![device_id, nickname, avatar_color],
         )?;
         Ok(())
@@ -205,6 +235,7 @@ mod tests {
             created_at: 1,
             last_seen: 0,
             favorite: false,
+            name_locked: false,
         }
     }
 
@@ -234,12 +265,26 @@ mod tests {
     fn update_seen_keeps_credentials_and_trust() {
         let (repo, _conn) = repository();
         repo.upsert(&peer("abc")).expect("insert");
-        repo.update_seen("abc", "10.0.0.5", 99).expect("seen");
+        repo.update_presence("abc", "10.0.0.5", 99, None).expect("seen");
         let got = repo.get("abc").expect("get").expect("present");
         assert_eq!(got.last_ip, "10.0.0.5");
         assert_eq!(got.last_seen, 99);
         assert!(got.trusted);
         assert!(!got.credentials.is_empty());
+        assert_eq!(got.nickname, "书房 Mac", "a silent beacon leaves the name alone");
+    }
+
+    #[test]
+    fn an_announced_name_replaces_the_followed_one() {
+        let (repo, _conn) = repository();
+        repo.upsert(&peer("abc")).expect("insert");
+        repo.update_presence("abc", "10.0.0.5", 99, Some("新名字"))
+            .expect("seen");
+        let got = repo.get("abc").expect("get").expect("present");
+        assert_eq!(got.device_name, "新名字");
+        assert_eq!(got.nickname, "", "the peer's own name outranks the old label");
+        assert_eq!(got.last_ip, "10.0.0.5");
+        assert!(got.trusted, "a rename must not touch the pairing");
     }
 
     #[test]

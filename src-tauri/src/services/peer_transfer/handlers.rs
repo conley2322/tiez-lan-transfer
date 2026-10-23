@@ -27,8 +27,10 @@ use crate::services::file_transfer::sealed;
 
 use super::client;
 use super::db;
+use super::discovery;
 use super::models::{
-    InviteReply, PeerHandshake, PeerIdentity, PeerIdentityState, PeerInvite, PendingReceive,
+    ConnectAsk, ConnectReply, InviteReply, PeerHandshake, PeerIdentity, PeerIdentityState,
+    PeerInvite, PendingReceive, CONNECT_REQUEST_TTL,
 };
 use super::pairing;
 use super::receive;
@@ -36,6 +38,8 @@ use super::roster;
 
 /// Kind for every handshake frame, in both directions.
 const HANDSHAKE_KIND: &str = "handshake";
+/// Kind for the nearby-connect ask and its sealed answer.
+const CONNECT_KIND: &str = "connect";
 
 /// `None` means the peer feature never finished starting (or its lock broke);
 /// every peer route then refuses rather than falling back to a default key,
@@ -158,6 +162,35 @@ pub async fn peer_handshake(
             if db::is_trusted_sender(app, &message.device_id) {
                 return reply_to(app, &our_identity, &message, &their_key, "paired");
             }
+            // This machine's user just approved a nearby connect: the sealed
+            // handshake is that machine completing what was accepted, so it
+            // must not raise a second card.
+            if pairing::take_approved_connect(app, &message.device_id) {
+                let peer = db::peer_from_handshake(
+                    &message.device_id,
+                    &clean_field(&message.device_name, 80),
+                    &clean_field(&message.nickname, 40),
+                    &clean_field(&message.platform, 20),
+                    &remote.ip().to_string(),
+                    message.port,
+                    &message.auth,
+                    &message.key,
+                );
+                if let Some(peer) = peer {
+                    if let Err(error) = db::save_peer(app, peer) {
+                        eprintln!(">>> [PEER] failed to save connected peer: {error}");
+                    }
+                }
+                roster::notify_peers_changed(app);
+                let _ = app.emit(
+                    "peer-pair-done",
+                    serde_json::json!({
+                        "deviceId": message.device_id.clone(),
+                        "accepted": true,
+                    }),
+                );
+                return reply_to(app, &our_identity, &message, &their_key, "accept");
+            }
             let verify_word = roster::verify_word(
                 (&our_identity.device_id, &our_identity.key),
                 (&message.device_id, &their_key),
@@ -212,6 +245,113 @@ pub async fn peer_handshake(
             (StatusCode::BAD_REQUEST, "Unknown pairing status").into_response()
         }
     }
+}
+
+fn sealed_connect_reply(their_key: &sealed::LanKey, reply: &ConnectReply) -> Response {
+    sealed_boxed(CONNECT_KIND, their_key, reply)
+}
+
+/// A fresh pairing code, sealed only with the asker's key. The IP inside is a
+/// best guess; the asker already knows an address that works and keeps it.
+fn connect_pairing_code(app: &AppHandle, identity: &PeerIdentity) -> String {
+    let ip = crate::services::file_transfer::get_local_ip_addr(app.clone());
+    roster::build_pairing_code(identity, &ip, pairing::server_port(app))
+}
+
+/// `POST /p/connect`: "I can see you in my nearby list; may we pair?"
+///
+/// No token, no secret in the ask. The answer carries a pairing code, so it is
+/// sealed with the asker's key and only sent after this machine's user slides
+/// to accept. That makes clicking an avatar the same trust decision as reading
+/// a code aloud — with the code exchanged by the two machines instead.
+pub async fn peer_connect(
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(remote): ConnectInfo<SocketAddr>,
+    body: axum::body::Bytes,
+) -> Response {
+    let app = state.app_handle.clone();
+    let Some(our_identity) = our_identity(&app) else {
+        return unavailable();
+    };
+    let Ok(ask) = serde_json::from_slice::<ConnectAsk>(&body) else {
+        return (StatusCode::BAD_REQUEST, "Invalid connect request").into_response();
+    };
+    if ask.device_id.len() < 8
+        || ask.device_id.len() > 64
+        || !ask.device_id.chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return (StatusCode::BAD_REQUEST, "Invalid device id").into_response();
+    }
+    if ask.device_id == our_identity.device_id {
+        return (StatusCode::CONFLICT, "这是本机自己").into_response();
+    }
+    let Some(their_key) = sealed::decode_key(&ask.key) else {
+        return (StatusCode::BAD_REQUEST, "Invalid connect key").into_response();
+    };
+    if crate::global_state::receiving_paused() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "This machine is pausing incoming transfers",
+        )
+            .into_response();
+    }
+
+    // Already paired here. If the ask carries that peer's stored key it is the
+    // same machine, so a one-sided roster can heal without walking to the
+    // other screen; a different key is an id collision and gets no code.
+    if let Some(peer) = db::send_target(&app, &ask.device_id) {
+        let same_machine = sealed::encode_key(&peer.key) == ask.key;
+        return sealed_connect_reply(
+            &their_key,
+            &ConnectReply {
+                status: if same_machine { "accept" } else { "already" }.to_string(),
+                code: if same_machine {
+                    connect_pairing_code(&app, &our_identity)
+                } else {
+                    String::new()
+                },
+            },
+        );
+    }
+
+    if !discovery::is_enabled(&app) {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Discovery is turned off",
+        )
+            .into_response();
+    }
+
+    let Some((view, receiver)) =
+        pairing::record_connect_ask(&app, &ask, remote.ip().to_string())
+    else {
+        return (StatusCode::TOO_MANY_REQUESTS, "Too many connect requests").into_response();
+    };
+    crate::app::peer_floats::on_pair_request(&app);
+    let _ = app.emit("peer-pair-request", view);
+
+    // The user has a minute; meanwhile this request is the only channel the
+    // asker has, so it stays open and then answers truthfully.
+    let decision = tokio::time::timeout(CONNECT_REQUEST_TTL, receiver).await;
+    pairing::finish_connect_ask(&app, &ask.device_id);
+    let reply = match decision {
+        Ok(Ok(true)) => {
+            pairing::approve_connect(&app, &ask.device_id);
+            ConnectReply {
+                status: "accept".to_string(),
+                code: connect_pairing_code(&app, &our_identity),
+            }
+        }
+        Ok(Ok(false)) => ConnectReply {
+            status: "reject".to_string(),
+            code: String::new(),
+        },
+        _ => ConnectReply {
+            status: "timeout".to_string(),
+            code: String::new(),
+        },
+    };
+    sealed_connect_reply(&their_key, &reply)
 }
 
 /// The inbound window's view of one accepted chunk. `process_upload_chunk`

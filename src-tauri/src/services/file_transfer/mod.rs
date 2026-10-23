@@ -748,6 +748,13 @@ pub async fn run_server(listener: tokio::net::TcpListener, app_handle: AppHandle
             handlers::apply_download_security_headers,
         ));
 
+    // Nearby connect asks. Unauthenticated on purpose: the asker has no token
+    // yet. The handler shows this machine's user a card and only answers with a
+    // pairing code after that user accepts, so this route stays outside the
+    // peer-session middleware rather than weakening it.
+    let connect_route = Router::new()
+        .route("/p/connect", post(peer_transfer::handlers::peer_connect));
+
     // Desktop-to-desktop (`peer_transfer`): the pairing handshake and the peer's
     // chunks. A separate token space — a phone's session must not reach a
     // desktop's roster, and a pairing must not survive into the phone UI.
@@ -765,6 +772,7 @@ pub async fn run_server(listener: tokio::net::TcpListener, app_handle: AppHandle
 
     let app = Router::new()
         .merge(download_route)
+        .merge(connect_route)
         .merge(protected_routes)
         .merge(peer_routes)
         .with_state(state.clone())

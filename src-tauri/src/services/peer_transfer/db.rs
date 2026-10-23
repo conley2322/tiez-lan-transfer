@@ -42,6 +42,7 @@ fn to_stored(peer: &PeerHandle) -> StoredPeer {
         created_at: peer.created_at,
         last_seen: peer.last_seen,
         favorite: peer.favorite,
+        name_locked: peer.name_locked,
     }
 }
 
@@ -62,6 +63,7 @@ fn to_handle(peer: StoredPeer) -> Option<PeerHandle> {
         created_at: peer.created_at,
         last_seen: peer.last_seen,
         favorite: peer.favorite,
+        name_locked: peer.name_locked,
     })
 }
 
@@ -99,11 +101,12 @@ pub fn load_roster(app: &AppHandle) -> Result<usize, String> {
 
 /// Insert or update a paired device (and its row).
 ///
-/// A handshake says who the other machine is, not how this one labels it, so
-/// the fields the user set locally — nickname, colour, ⭐ and the original
-/// pairing date — are carried over from the roster instead of being reset by
-/// whatever the peer announced. Every caller gets that for free, including a
-/// re-pair that arrives through a different path.
+/// The handshake says who the other machine is now; the fields the user set
+/// locally — a label, colour and ⭐ — are carried over from the roster instead
+/// of being reset by whatever the peer announced. Only a label the user
+/// actually typed (`name_locked`) wins over the peer's own name: otherwise a
+/// machine that renamed itself would keep its old name on every other screen
+/// until someone re-paired.
 pub fn save_peer(app: &AppHandle, mut peer: PeerHandle) -> Result<(), String> {
     if let Some(existing) = app
         .state::<PeerRosterState>()
@@ -112,8 +115,14 @@ pub fn save_peer(app: &AppHandle, mut peer: PeerHandle) -> Result<(), String> {
         .ok()
         .and_then(|roster| roster.get(&peer.device_id).cloned())
     {
-        if !peer.nickname.is_empty() && !existing.nickname.is_empty() {
+        if existing.name_locked {
             peer.nickname = existing.nickname;
+            peer.name_locked = true;
+        } else {
+            // The announced name is already in `device_name`; the old nickname
+            // field must not outrank it in `display_name`.
+            peer.nickname = String::new();
+            peer.name_locked = false;
         }
         if !existing.avatar_color.is_empty() {
             peer.avatar_color = existing.avatar_color;
@@ -143,6 +152,7 @@ pub fn forget_peer(app: &AppHandle, device_id: &str) -> Result<(), String> {
 
 pub fn update_profile(app: &AppHandle, device_id: &str, nickname: &str, avatar_color: &str) -> Result<(), String> {
     let nickname = super::roster::clean_text(nickname, 40);
+    let locked = !nickname.is_empty();
     repository(app)
         .update_profile(device_id, &nickname, avatar_color)
         .map_err(|e| format!("failed to update device profile: {e}"))?;
@@ -150,6 +160,7 @@ pub fn update_profile(app: &AppHandle, device_id: &str, nickname: &str, avatar_c
     if let Some(peer) = state.0.write().unwrap().get_mut(device_id) {
         peer.nickname = nickname;
         peer.avatar_color = avatar_color.to_string();
+        peer.name_locked = locked;
     }
     Ok(())
 }
@@ -167,25 +178,35 @@ pub fn set_favorite(app: &AppHandle, device_id: &str, favorite: bool) -> Result<
     Ok(())
 }
 
-/// A beacon told us a peer lives at a new address. Returns whether anything
-/// actually changed, so callers can skip the UI event.
-pub fn apply_seen(app: &AppHandle, device_id: &str, ip: &str, port: u16) -> bool {
-    let (changed, seen_at) = {
+/// A beacon told us a peer lives at a new address — and, unless the user here
+/// gave that peer a label, what it currently calls itself. Returns whether any
+/// of the listed fields changed, so callers can skip the UI event; `last_seen`
+/// alone moves every few seconds and is not a change worth a repaint.
+pub fn apply_seen(app: &AppHandle, device_id: &str, name: &str, ip: &str, port: u16) -> bool {
+    let announced = super::roster::clean_text(name, 80);
+    let (changed, seen_at, stored_name) = {
         let state = app.state::<PeerRosterState>();
         let mut roster = state.0.write().unwrap();
         let Some(peer) = roster.get_mut(device_id) else {
             return false;
         };
-        let changed = peer.ip != ip || (port != 0 && peer.port != port);
+        let mut changed = peer.ip != ip || (port != 0 && peer.port != port);
         peer.ip = ip.to_string();
         if port != 0 {
             peer.port = port;
         }
+        let mut stored_name = None;
+        if !peer.name_locked && !announced.is_empty() && peer.device_name != announced {
+            peer.device_name = announced.clone();
+            peer.nickname.clear();
+            changed = true;
+            stored_name = Some(announced);
+        }
         peer.last_seen = now_ms();
-        (changed, peer.last_seen)
+        (changed, peer.last_seen, stored_name)
     };
     // The connection lock is never taken while the roster is held.
-    let _ = repository(app).update_seen(device_id, ip, seen_at);
+    let _ = repository(app).update_presence(device_id, ip, seen_at, stored_name.as_deref());
     changed
 }
 
@@ -231,10 +252,18 @@ pub fn peer_from_handshake(
     key_text: &str,
 ) -> Option<PeerHandle> {
     let key = crate::services::file_transfer::sealed::decode_key(key_text)?;
+    // What the other machine calls itself right now: its own nickname if it
+    // chose one, its machine name otherwise. Stored as `device_name` so the
+    // next beacon can keep it true; `nickname` stays for a local label.
+    let announced = if nickname.trim().is_empty() {
+        device_name.to_string()
+    } else {
+        nickname.to_string()
+    };
     Some(PeerHandle {
         device_id: device_id.to_string(),
-        device_name: device_name.to_string(),
-        nickname: nickname.to_string(),
+        device_name: announced,
+        nickname: String::new(),
         platform: platform.to_string(),
         ip: ip.to_string(),
         port,
@@ -246,6 +275,7 @@ pub fn peer_from_handshake(
         created_at: now_ms(),
         last_seen: now_ms(),
         favorite: false,
+        name_locked: false,
     })
 }
 
@@ -280,6 +310,7 @@ mod tests {
             created_at: 5,
             last_seen: 9,
             favorite: true,
+            name_locked: true,
         };
         let stored = to_stored(&peer);
         let back = to_handle(stored).expect("handle");
@@ -289,6 +320,28 @@ mod tests {
         assert_eq!(back.key, peer.key);
         assert_eq!(back.nickname, "书房");
         assert!(back.favorite, "the star rides along with the row");
+        assert!(back.name_locked, "a local label survives a round trip");
+    }
+
+    #[test]
+    fn a_handshake_name_is_what_the_peer_calls_itself() {
+        let peer = peer_from_handshake(
+            "0123456789abcdef",
+            "新名字 的 Windows 电脑",
+            "新名字",
+            "windows",
+            "192.168.1.9",
+            28462,
+            "pt_x",
+            &crate::services::file_transfer::sealed::encode_key(&[7u8; 32]),
+        )
+        .expect("peer");
+        assert_eq!(peer.display_name(), "新名字");
+        assert!(
+            !peer.name_locked,
+            "a fresh pairing follows the announced name until a local label is typed"
+        );
+        assert!(peer.nickname.is_empty(), "no local label yet");
     }
 
     #[test]
@@ -306,6 +359,7 @@ mod tests {
             created_at: 0,
             last_seen: 0,
             favorite: false,
+            name_locked: false,
         };
         assert!(to_handle(stored).is_none());
     }

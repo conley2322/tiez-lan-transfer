@@ -40,6 +40,8 @@ export type PairRequest = {
     ip: string;
     verifyWord: string;
     expiresIn: number;
+    /** "pair" (a pasted code) or "connect" (a clicked nearby avatar). */
+    kind: string;
 };
 
 export type PairRequests = { inbound: PairRequest[]; outbound: PairRequest[] };
@@ -105,6 +107,8 @@ export type CornerState = {
     side: string;
     opacity: number;
     favoritesOnly: boolean;
+    /** Shake the mouse during a drag to open the panel without hovering. */
+    shelfEnabled: boolean;
 };
 
 /** What Rust actually wrote into HKCU for the right-click submenu. `entries` is
@@ -125,6 +129,7 @@ export type FloatState = {
 export type NearbyPeer = {
     deviceId: string;
     deviceName: string;
+    platform: string;
     ip: string;
     port: number;
 };
@@ -156,6 +161,8 @@ export const removePeer = (deviceId: string) => invoke<void>("remove_peer", { de
 
 export const generatePairingCode = () => invoke<string>("get_peer_pairing_code");
 export const pairWithCode = (code: string) => invoke<PairResult>("pair_with_code", { code });
+export const connectNearby = (deviceId: string) =>
+    invoke<PairResult>("connect_nearby_peer", { deviceId });
 export const listPairRequests = () => invoke<PairRequests>("list_pair_requests");
 export const respondPair = (deviceId: string, accept: boolean) =>
     invoke<void>("respond_pair_request", { deviceId, accept });
@@ -204,6 +211,8 @@ export const setCornerOpacity = (opacity: number) =>
     invoke<void>("set_corner_box_opacity", { opacity });
 export const setCornerFavoritesOnly = (favoritesOnly: boolean) =>
     invoke<void>("set_corner_box_favorites_only", { favoritesOnly });
+export const setCornerShelfEnabled = (enabled: boolean) =>
+    invoke<void>("set_corner_box_shelf_enabled", { enabled });
 
 export const getWinMenuState = () => invoke<WinMenuState>("get_win_menu_state");
 export const setWinMenuEnabled = (enabled: boolean) =>

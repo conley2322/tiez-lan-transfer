@@ -53,6 +53,10 @@ pub fn init(app: &AppHandle) {
             identity::temporary_identity()
         }
     };
+    // The pairing windows read these even when the identity is unavailable,
+    // so they exist before the early return below.
+    app.manage(ConnectRequestsState(Mutex::new(HashMap::new())));
+    app.manage(ApprovedConnectsState(Mutex::new(HashMap::new())));
     let Some(identity) = identity else {
         eprintln!(">>> [PEER] device-to-device transfer is off: no random key available");
         return;

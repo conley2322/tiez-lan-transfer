@@ -67,43 +67,62 @@ export default function PairFloat({ t }: { t: LanT }) {
 
     if (empty) return null;
 
+    const onlyConnects =
+        requests.outbound.length === 0 &&
+        requests.inbound.length > 0 &&
+        requests.inbound.every((request) => request.kind === "connect");
+
     return (
         <div className="float-card">
             <div className="float-head">
-                <span className="float-title">{t("float_pair_title")}</span>
+                <span className="float-title">
+                    {onlyConnects ? t("float_connect_title") : t("float_pair_title")}
+                </span>
             </div>
             <div className="float-body">
-                {requests.inbound.map((request) => (
-                    <div className="float-ask" key={`in-${request.deviceId}`}>
-                        <div className="float-ask-name">
-                            {request.nickname || request.deviceName}
+                {requests.inbound.map((request) => {
+                    const name = request.nickname || request.deviceName;
+                    const isConnect = request.kind === "connect";
+                    return (
+                        <div className="float-ask" key={`in-${request.deviceId}`}>
+                            <div className="float-ask-name">{name}</div>
+                            <div className="float-ask-meta">
+                                {isConnect
+                                    ? t("float_connect_body", { name })
+                                    : t("float_pair_body", { name })}
+                            </div>
+                            <div className="float-ask-meta">
+                                {platformBadge(request.platform)} · {request.ip}
+                            </div>
+                            {isConnect ? (
+                                <div className="float-word-hint">
+                                    {t("float_expires", { sec: request.expiresIn })}
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="float-word">
+                                        {t("float_word")}
+                                        <b>{request.verifyWord}</b>
+                                    </div>
+                                    <div className="float-word-hint">
+                                        {t("float_word_hint")}
+                                    </div>
+                                </>
+                            )}
+                            <SlideToAccept
+                                label={t("float_slide_pair")}
+                                onAccept={() => answer(request.deviceId, true)}
+                            />
+                            <button
+                                type="button"
+                                className="float-act is-wide"
+                                onClick={() => answer(request.deviceId, false)}
+                            >
+                                {t("float_reject")}
+                            </button>
                         </div>
-                        <div className="float-ask-meta">
-                            {t("float_pair_body", {
-                                name: request.nickname || request.deviceName,
-                            })}
-                        </div>
-                        <div className="float-ask-meta">
-                            {platformBadge(request.platform)} · {request.ip}
-                        </div>
-                        <div className="float-word">
-                            {t("float_word")}
-                            <b>{request.verifyWord}</b>
-                        </div>
-                        <div className="float-word-hint">{t("float_word_hint")}</div>
-                        <SlideToAccept
-                            label={t("float_slide_pair")}
-                            onAccept={() => answer(request.deviceId, true)}
-                        />
-                        <button
-                            type="button"
-                            className="float-act is-wide"
-                            onClick={() => answer(request.deviceId, false)}
-                        >
-                            {t("float_reject")}
-                        </button>
-                    </div>
-                ))}
+                    );
+                })}
                 {requests.outbound.map((request) => (
                     <div className="float-ask" key={`out-${request.deviceId}`}>
                         <div className="float-ask-name">

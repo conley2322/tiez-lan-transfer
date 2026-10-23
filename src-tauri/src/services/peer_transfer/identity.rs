@@ -108,20 +108,29 @@ pub fn load_or_create_identity(data_dir: &Path) -> Result<PeerIdentity, String> 
             let key_text = decode_or_error(&stored.key)?;
             let key: LanKey = sealed::decode_key(&key_text)
                 .ok_or_else(|| "peer identity key is corrupt".to_string())?;
-            let device_name = if stored.device_name.is_empty() {
+            // A machine name is not a user choice: it follows the OS account
+            // until the user types a nickname. Recomputing it on every start is
+            // what makes an account rename show up as the new name elsewhere.
+            let device_name = if stored.nickname.trim().is_empty() {
+                default_device_name()
+            } else if stored.device_name.is_empty() {
                 default_device_name()
             } else {
-                stored.device_name
+                stored.device_name.clone()
             };
-            return Ok(PeerIdentity {
+            let identity = PeerIdentity {
                 device_id: stored.device_id,
-                device_name,
+                device_name: device_name.clone(),
                 nickname: stored.nickname,
                 platform: platform_label(),
                 avatar_color: stored.avatar_color,
                 auth_token,
                 key,
-            });
+            };
+            if device_name != stored.device_name {
+                save_identity(data_dir, &identity)?;
+            }
+            return Ok(identity);
         }
     }
 
