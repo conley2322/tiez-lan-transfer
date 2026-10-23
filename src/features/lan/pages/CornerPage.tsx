@@ -9,13 +9,13 @@ import * as api from "../api";
 import { LanCard, LanRange, LanRow, LanSegment, LanSwitch } from "../controls";
 import type { SettingsCtx } from "../LanSettingsWindow";
 
-type Side = "top-right" | "top-left";
+type Side = "follow" | "top-right" | "top-left";
 
 export default function CornerPage({ ctx }: { ctx: SettingsCtx }) {
     const { t, corner, refreshCorner } = ctx;
 
     const enabled = corner?.enabled ?? true;
-    const side = (corner?.side ?? "top-right") as Side;
+    const side = (corner?.side ?? "follow") as Side;
     const opacity = corner?.opacity ?? 80;
     const favoritesOnly = corner?.favoritesOnly ?? false;
     const shelfEnabled = corner?.shelfEnabled ?? true;
@@ -43,6 +43,7 @@ export default function CornerPage({ ctx }: { ctx: SettingsCtx }) {
                                 value={side}
                                 ariaLabel={t("corner_side")}
                                 options={[
+                                    { value: "follow", label: t("side_follow") },
                                     { value: "top-right", label: t("side_top_right") },
                                     { value: "top-left", label: t("side_top_left") },
                                 ]}

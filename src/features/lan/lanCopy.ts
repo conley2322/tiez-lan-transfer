@@ -128,9 +128,10 @@ const zh = {
 
     // ── 角落拖拽框 ───────────────────────────────────────────
     corner_title: "Mac 角落拖拽框",
-    corner_enable: "启用屏幕角落放置框",
-    corner_enable_hint: "拖起文件时，屏幕角落才出现一个小图标；文件放到图标上才展开用户列表。",
-    corner_side: "位置",
+    corner_enable: "启用拖拽放置框",
+    corner_enable_hint: "拖起文件时才出现一个小图标，默认就在鼠标旁边；文件放到图标上才展开用户列表。",
+    corner_side: "出现位置",
+    side_follow: "跟随拖拽",
     side_top_right: "右上角",
     side_top_left: "左上角",
     corner_opacity: "展开后透明度",
@@ -138,7 +139,7 @@ const zh = {
     corner_fav: "仅显示收藏的用户",
     corner_fav_hint: "关掉后列出所有已配对且可发送的机器（最多 8 台）。",
     corner_shelf: "晃动两下唤出暂存架",
-    corner_shelf_hint: "拖起文件后把鼠标左右晃两下，角落的框会直接展开成头像列表；不晃就只显示小图标，免得挡路。",
+    corner_shelf_hint: "拖起文件后把鼠标左右晃两下，框会直接展开成头像列表；不晃就只显示小图标，免得挡路。",
 
     // ── 右键菜单 ─────────────────────────────────────────────
     menu_title: "右键菜单",
@@ -339,9 +340,10 @@ const en: Record<keyof typeof zh, string> = {
     max_targets: "Up to 8 machines per batch.",
 
     corner_title: "Mac Corner Drop Box",
-    corner_enable: "Show the corner drop box",
-    corner_enable_hint: "A small icon appears in the corner only while you drag a file; the user list opens when the file is over it.",
-    corner_side: "Side",
+    corner_enable: "Show the drag drop box",
+    corner_enable_hint: "A small icon appears next to the file only while you drag one; the user list opens when the file is over it.",
+    corner_side: "Position",
+    side_follow: "Follow the drag",
     side_top_right: "Top right",
     side_top_left: "Top left",
     corner_opacity: "Expanded opacity",
@@ -349,7 +351,7 @@ const en: Record<keyof typeof zh, string> = {
     corner_fav: "Favorite users only",
     corner_fav_hint: "Off lists every sendable machine (up to 8).",
     corner_shelf: "Shake to summon the shelf",
-    corner_shelf_hint: "While dragging a file, wiggle the mouse left and right twice to expand the corner panel; without the wiggle only the small icon shows, out of the way.",
+    corner_shelf_hint: "While dragging a file, wiggle the mouse left and right twice to expand the panel into the avatar list; without the wiggle only the small icon shows, out of the way.",
 
     menu_title: "Context Menu",
     menu_mac_head: "macOS: right-click needs a FinderSync extension",
@@ -547,9 +549,10 @@ const tw: Record<keyof typeof zh, string> = {
     max_targets: "一次最多同時傳給 8 台裝置。",
 
     corner_title: "Mac 角落拖曳框",
-    corner_enable: "啟用螢幕角落放置框",
-    corner_enable_hint: "拖起檔案時，螢幕角落才出現一個小圖示；檔案放到圖示上才展開使用者清單。",
-    corner_side: "位置",
+    corner_enable: "啟用拖曳放置框",
+    corner_enable_hint: "拖起檔案時，滑鼠旁才出現一個小圖示；檔案放到圖示上才展開使用者清單。",
+    corner_side: "出現位置",
+    side_follow: "跟隨拖曳",
     side_top_right: "右上角",
     side_top_left: "左上角",
     corner_opacity: "展開後透明度",
@@ -557,7 +560,7 @@ const tw: Record<keyof typeof zh, string> = {
     corner_fav: "僅顯示收藏的使用者",
     corner_fav_hint: "關閉後列出所有已配對且可傳送的機器（最多 8 台）。",
     corner_shelf: "晃兩下喚出暫存架",
-    corner_shelf_hint: "拖起檔案後把滑鼠左右晃兩下，角落的框會直接展開成頭像清單；不晃就只顯示小圖示，免得擋路。",
+    corner_shelf_hint: "拖起檔案後把滑鼠左右晃兩下，框會直接展開成頭像清單；不晃就只顯示小圖示，免得擋路。",
 
     menu_title: "右鍵選單",
     menu_mac_head: "macOS：右鍵傳送需要 FinderSync 擴充",

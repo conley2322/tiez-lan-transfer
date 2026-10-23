@@ -8,6 +8,7 @@
 //! where the rectangle sits, how tall it is, and when it is on screen at all.
 
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -24,9 +25,9 @@ pub const CORNER_LABEL: &str = "corner";
 /// only appears during a drag is a much smaller ask than the right-click menu
 /// it stands in for.
 pub const ENABLED_KEY: &str = "app.corner_box_enabled";
-/// `top-right` | `top-left`. The right is the default even though the menu bar
-/// is crowded there — that side is where the window close buttons live, so the
-/// file being dragged already travels past it.
+/// `follow` | `top-right` | `top-left`. Following the drag is the default: on
+/// a large screen, having to travel to a corner while holding a file was the
+/// one thing the box got wrong, so it now appears beside the file instead.
 pub const SIDE_KEY: &str = "app.corner_box_side";
 /// 40–100 percent. The page paints its own panel, so this is a number the page
 /// reads rather than a window property: `set_opacity` on a transparent WebView
@@ -60,6 +61,13 @@ const ROW_HEIGHT: f64 = 48.0;
 const PANEL_FOOTER: f64 = 10.0;
 const EDGE_MARGIN: f64 = 12.0;
 const TOP_MARGIN: f64 = 6.0;
+/// How far the icon sits from the pointer in follow mode. Far enough that
+/// showing the box does not put it under the dragged file (which would expand
+/// the panel before the user asked), close enough to reach with one flick.
+const DRAG_GAP: f64 = 18.0;
+/// Where the drag started, in physical desktop pixels. Cleared by the next
+/// drag; `None` (a failed pointer read) parks the box in the corner.
+static DRAG_ANCHOR: Mutex<Option<(f64, f64)>> = Mutex::new(None);
 /// `send_files_to_peers` caps a batch at 8 peers; a taller box than the screen
 /// helps nobody, and the settings list is the place for the rest.
 const MAX_ROWS: usize = 8;
@@ -94,7 +102,10 @@ pub fn is_enabled(app: &AppHandle) -> bool {
 pub fn side(app: &AppHandle) -> &'static str {
     match setting(app, SIDE_KEY).as_deref() {
         Some("top-left") => "top-left",
-        _ => "top-right",
+        Some("top-right") => "top-right",
+        // Missing means an update from the corner-only version; following the
+        // drag is the behaviour those users asked for.
+        _ => "follow",
     }
 }
 
@@ -148,6 +159,11 @@ fn size_for(expanded: bool, rows: usize) -> (f64, f64) {
 /// the icon and the list both hang from the same screen corner.
 fn place(window: &WebviewWindow, width: f64, height: f64) -> Result<(), String> {
     let app = window.app_handle();
+    if side(app) == "follow" {
+        if let Some(anchor) = DRAG_ANCHOR.lock().ok().and_then(|slot| *slot) {
+            return place_at_drag(app, window, anchor, width, height);
+        }
+    }
     let monitor = app
         .primary_monitor()
         .map_err(|error| error.to_string())?
@@ -177,6 +193,84 @@ fn place(window: &WebviewWindow, width: f64, height: f64) -> Result<(), String> 
     window
         .set_position(PhysicalPosition::new(x, y))
         .map_err(|error| error.to_string())
+}
+
+/// Follow mode: put the box beside the drag that opened it, on the screen the
+/// drag started on.
+fn place_at_drag(
+    app: &AppHandle,
+    window: &WebviewWindow,
+    anchor: (f64, f64),
+    width: f64,
+    height: f64,
+) -> Result<(), String> {
+    let monitor = app
+        .monitor_from_point(anchor.0, anchor.1)
+        .ok()
+        .flatten()
+        .or_else(|| app.primary_monitor().ok().flatten())
+        .ok_or("找不到屏幕")?;
+    let scale = monitor.scale_factor().max(1.0);
+    let area = monitor.work_area();
+    let width_px = (width * scale).round() as i32;
+    let height_px = (height * scale).round() as i32;
+    let margin_px = (EDGE_MARGIN * scale).round() as i32;
+    let gap_px = (DRAG_GAP * scale).round() as i32;
+    let left = area.position.x;
+    let top = area.position.y;
+    let right = left + area.size.width as i32;
+    let bottom = top + area.size.height as i32;
+
+    // The icon decides where the box sits; the expanded panel keeps the same
+    // top-left and only gives way to the screen edge, so opening it cannot
+    // yank it out from under the pointer that just entered it.
+    let (icon_x, icon_y) = drag_origin(
+        (anchor.0.round() as i32, anchor.1.round() as i32),
+        (ICON_SIZE * scale).round() as i32,
+        (left, top, right, bottom),
+        gap_px,
+    );
+    let x = icon_x
+        .min(right - margin_px - width_px)
+        .max(left + margin_px);
+    let y = icon_y
+        .min(bottom - margin_px - height_px)
+        .max(top + margin_px);
+
+    window
+        .set_size(PhysicalSize::new(
+            width_px.max(1) as u32,
+            height_px.max(1) as u32,
+        ))
+        .map_err(|error| error.to_string())?;
+    window
+        .set_position(PhysicalPosition::new(x, y))
+        .map_err(|error| error.to_string())
+}
+
+/// Top-left for the icon beside a drag point: lower right, flipped to the
+/// other side of the pointer when the screen ends.
+fn drag_origin(
+    anchor: (i32, i32),
+    icon_px: i32,
+    area: (i32, i32, i32, i32),
+    gap_px: i32,
+) -> (i32, i32) {
+    let (left, top, right, bottom) = area;
+    let (ax, ay) = anchor;
+    let mut x = ax + gap_px;
+    if x + icon_px > right {
+        x = ax - gap_px - icon_px;
+    }
+    let mut y = ay + gap_px;
+    if y + icon_px > bottom {
+        y = ay - gap_px - icon_px;
+    }
+    // A screen narrower than the icon: the clamp is a last resort.
+    (
+        x.clamp(left, (right - icon_px).max(left)),
+        y.clamp(top, (bottom - icon_px).max(top)),
+    )
 }
 
 /// Build the box if it is not there yet. Never shown from here: at boot the
@@ -230,13 +324,17 @@ pub fn prepare(app: &AppHandle) -> Result<(), String> {
 
 /// The native drag monitor saw a file leave a window. This is the only path
 /// that puts the box on screen; the page keeps it a small icon until the file
-/// is over it.
-pub fn show_for_drag(app: &AppHandle) -> Result<(), String> {
+/// is over it. `anchor` is where the pointer was (physical desktop pixels), so
+/// the box opens next to the file rather than in a corner.
+pub fn show_for_drag(app: &AppHandle, anchor: Option<(f64, f64)>) -> Result<(), String> {
     if !is_enabled(app) {
         return Ok(());
     }
     DRAG_GENERATION.fetch_add(1, Ordering::SeqCst);
     let window = ensure(app)?;
+    if let Ok(mut slot) = DRAG_ANCHOR.lock() {
+        *slot = anchor;
+    }
     // A previous drag may have ended with the page still expanded.
     place(&window, ICON_SIZE, ICON_SIZE)?;
     window.show().map_err(|error| error.to_string())?;
@@ -295,12 +393,21 @@ pub fn get_corner_box_state(app: AppHandle) -> CornerBoxState {
 
 /// The native drag monitor saw the mouse wiggle twice during a drag. The page
 /// owns the drawing and the size, so this only tells it to expand; it answers
-/// with `set_corner_box_layout`, the same call a hover uses.
-pub fn open_shelf(app: &AppHandle) -> Result<(), String> {
+/// with `set_corner_box_layout`, the same call a hover uses. `anchor` is where
+/// the wiggle happened, so the shelf pops up under the gesture.
+pub fn open_shelf(app: &AppHandle, anchor: Option<(f64, f64)>) -> Result<(), String> {
     if !is_enabled(app) || !shelf_enabled(app) {
         return Ok(());
     }
     let window = ensure(app)?;
+    if let Some(anchor) = anchor {
+        if let Ok(mut slot) = DRAG_ANCHOR.lock() {
+            *slot = Some(anchor);
+        }
+    }
+    // Re-place while still collapsed so the panel opens where the user is,
+    // not where the drag began.
+    place(&window, ICON_SIZE, ICON_SIZE)?;
     window.show().map_err(|error| error.to_string())?;
     let _ = app.emit_to(CORNER_LABEL, "corner-shake", ());
     Ok(())
@@ -367,10 +474,15 @@ pub fn set_corner_box_enabled(app: AppHandle, enabled: bool) -> Result<(), Strin
         .map_err(|error| error.to_string())
 }
 
-/// 右上角 / 左上角. The window is re-anchored and told which way it now hangs.
+/// 跟随拖拽 / 右上角 / 左上角. Re-anchors the window and tells it which way
+/// the icon now faces.
 #[tauri::command]
 pub fn set_corner_box_side(app: AppHandle, side: String) -> Result<(), String> {
-    let side = if side == "top-left" { "top-left" } else { "top-right" };
+    let side = match side.as_str() {
+        "top-left" => "top-left",
+        "top-right" => "top-right",
+        _ => "follow",
+    };
     persist(&app, SIDE_KEY, side)?;
     if let Some(window) = app.get_webview_window(CORNER_LABEL) {
         let size = window.inner_size().map_err(|error| error.to_string())?;
@@ -439,5 +551,30 @@ mod tests {
         assert_eq!(clamp_opacity(0), MIN_OPACITY);
         assert_eq!(clamp_opacity(39), MIN_OPACITY);
         assert_eq!(clamp_opacity(100), 100);
+    }
+
+    #[test]
+    fn the_box_sits_beside_the_drag_in_follow_mode() {
+        let area = (0, 0, 1440, 900);
+        assert_eq!(drag_origin((400, 300), 48, area, 18), (418, 318));
+    }
+
+    #[test]
+    fn a_drag_at_the_edge_flips_the_box_inside() {
+        let area = (0, 0, 1000, 800);
+        // The right edge: to the left of the pointer.
+        assert_eq!(drag_origin((990, 300), 48, area, 18), (924, 318));
+        // The bottom edge: above it.
+        assert_eq!(drag_origin((400, 790), 48, area, 18), (418, 724));
+        // Both at once.
+        assert_eq!(drag_origin((990, 790), 48, area, 18), (924, 724));
+    }
+
+    #[test]
+    fn an_anchor_off_screen_still_gets_an_inside_box() {
+        let area = (0, 0, 1000, 800);
+        let (x, y) = drag_origin((-50, 900), 48, area, 18);
+        assert!((0..=952).contains(&x));
+        assert!((0..=752).contains(&y));
     }
 }

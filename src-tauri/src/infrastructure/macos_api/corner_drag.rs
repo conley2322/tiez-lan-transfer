@@ -7,10 +7,10 @@
 //! global event monitor would be the usual answer, but it needs the
 //! Accessibility permission, and AppKit's drag sessions deliver to monitors
 //! inconsistently. Polling costs nothing and asks for nothing: the left button
-//! held down *and* a file URL on the drag pasteboard is a file drag, no matter
-//! which app started it.
+//! held down *and* a fresh file URL written to the drag pasteboard is a file
+//! drag, no matter which app started it.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -23,6 +23,10 @@ use tauri::AppHandle;
 static STARTED: AtomicBool = AtomicBool::new(false);
 /// What the last poll saw, so only the two transitions are reported.
 static DRAGGING: AtomicBool = AtomicBool::new(false);
+/// The drag pasteboard still holds the last drag's file URLs after the drop.
+/// This is its change count as of the last sample with no button held, so a
+/// press that does not write anything new can be told apart from a real drag.
+static RELEASED_COUNT: AtomicIsize = AtomicIsize::new(isize::MIN);
 
 /// Quick enough to see a wiggle: a shake reverses direction every few tens of
 /// milliseconds, and 200ms would turn most of them into a single swing.
@@ -143,32 +147,42 @@ pub fn start(app: AppHandle) {
 }
 
 fn poll(app: &AppHandle) {
-    let (dragging, mouse_x) = autoreleasepool(|_| {
-        // Bit 0 is the primary (left) button.
-        if NSEvent::pressedMouseButtons() & 1 == 0 {
-            return (false, None);
-        }
+    // Bit 0 is the primary (left) button.
+    let button_down = NSEvent::pressedMouseButtons() & 1 != 0;
+    let (has_file, change_count, mouse_x) = autoreleasepool(|_| {
         // The name is an AppKit global; reading it is the one unsafe step.
-        let pasteboard =
-            unsafe { NSPasteboard::pasteboardWithName(NSPasteboardNameDrag) };
-        let Some(types) = pasteboard.types() else {
-            return (false, None);
-        };
-        let is_file = types.iter().any(|kind| {
-            let kind = kind.to_string();
-            kind == "public.file-url" || kind == "NSFilenamesPboardType"
+        let pasteboard = unsafe { NSPasteboard::pasteboardWithName(NSPasteboardNameDrag) };
+        let count = pasteboard.changeCount();
+        let has_file = pasteboard.types().is_some_and(|types| {
+            types.iter().any(|kind| {
+                let kind = kind.to_string();
+                kind == "public.file-url" || kind == "NSFilenamesPboardType"
+            })
         });
-        if !is_file {
-            return (false, None);
-        }
-        (true, Some(NSEvent::mouseLocation().x))
+        (has_file, count, NSEvent::mouseLocation().x)
     });
+
+    // Everything seen while the button is up is the baseline for the next
+    // press: a real drag fills the pasteboard after that press, while moving a
+    // window or selecting text only re-reads the previous drag's leftovers.
+    if !button_down {
+        RELEASED_COUNT.store(change_count, Ordering::Relaxed);
+    }
+    let dragging = is_fresh_file_drag(
+        button_down,
+        has_file,
+        change_count,
+        RELEASED_COUNT.load(Ordering::Relaxed),
+    );
 
     let was_dragging = DRAGGING.load(Ordering::SeqCst);
     if dragging != was_dragging {
         DRAGGING.store(dragging, Ordering::SeqCst);
         if dragging {
-            if let Err(error) = crate::app::corner_box::show_for_drag(app) {
+            // The physical top-left position of the pointer: the box is put
+            // beside it, so it appears where the file is, not in a corner.
+            let anchor = app.cursor_position().ok().map(|point| (point.x, point.y));
+            if let Err(error) = crate::app::corner_box::show_for_drag(app, anchor) {
                 eprintln!(">>> [CORNER] drag icon did not open: {error}");
             }
         } else {
@@ -176,24 +190,37 @@ fn poll(app: &AppHandle) {
         }
     }
 
-    let Some(x) = mouse_x else {
+    if !dragging {
         if let Ok(mut shake) = SHAKE.lock() {
             shake.reset();
         }
         return;
-    };
-    if !dragging {
-        return;
     }
     let fire = SHAKE
         .lock()
-        .map(|mut shake| shake.observe(x, Instant::now()))
+        .map(|mut shake| shake.observe(mouse_x, Instant::now()))
         .unwrap_or(false);
     if fire {
-        if let Err(error) = crate::app::corner_box::open_shelf(app) {
+        // The wiggle happened here, which may be far from where the drag
+        // started; the shelf opens under the gesture, not at the grab point.
+        let anchor = app.cursor_position().ok().map(|point| (point.x, point.y));
+        if let Err(error) = crate::app::corner_box::open_shelf(app, anchor) {
             eprintln!(">>> [CORNER] shelf did not open: {error}");
         }
     }
+}
+
+/// A file drag writes to the drag pasteboard *after* the press that started
+/// it. The stale file types of the previous drag, held with the button down,
+/// must not count: that is how the box used to pop up while selecting text or
+/// moving a window.
+fn is_fresh_file_drag(
+    button_down: bool,
+    has_file: bool,
+    change_count: isize,
+    released_count: isize,
+) -> bool {
+    button_down && has_file && change_count != released_count
 }
 
 #[cfg(test)]
@@ -257,5 +284,28 @@ mod tests {
             time += Duration::from_millis(120);
         }
         assert!(!fired);
+    }
+
+    #[test]
+    fn a_new_file_drag_is_a_fresh_pasteboard_write() {
+        // Pressing the button while the last drag's file URL is still on the
+        // pasteboard must not open the box.
+        assert!(!is_fresh_file_drag(true, true, 7, 7));
+        // The drag session itself writes the items after the press.
+        assert!(is_fresh_file_drag(true, true, 8, 7));
+        // Without a file on the pasteboard there is nothing to drop.
+        assert!(!is_fresh_file_drag(true, false, 8, 7));
+        // The button is up: not a drag at all.
+        assert!(!is_fresh_file_drag(false, true, 8, 7));
+    }
+
+    #[test]
+    fn a_released_pasteboard_goes_stale_on_the_next_press() {
+        // First drag: press at count 5, the session writes 6.
+        assert!(is_fresh_file_drag(true, true, 6, 5));
+        // Drop: the button comes up and the count becomes the baseline.
+        assert!(!is_fresh_file_drag(false, true, 6, 6));
+        // A text selection afterwards holds the button with the same count.
+        assert!(!is_fresh_file_drag(true, true, 6, 6));
     }
 }
