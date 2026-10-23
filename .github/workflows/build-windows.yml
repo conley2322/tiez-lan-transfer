@@ -13,6 +13,8 @@ on:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
+      # 改 Mac 那条不影响 Windows 包，别互相触发空跑。
+      - ".github/workflows/build-macos.yml"
   workflow_dispatch:
 
 permissions:

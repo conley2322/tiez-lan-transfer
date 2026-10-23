@@ -1,0 +1,145 @@
+name: 打包 macOS 安装包
+
+# 和 Windows 那条一样的思路：推到 main 就跑（只改文档不跑），也可以手动触发。
+# 产物是 ad-hoc 签名的 DMG，不需要 Apple 开发者账号，也不用登录任何服务。
+#
+# 为什么不用 `tauri build` 直接出 DMG：本仓库没有 Developer ID 证书，Tauri 打完
+# .app 就交给 `bundle_dmg.sh`，那份 .app 只有链接器签名，`codesign --verify` 会报
+# "code has no resources"。所以这里分两步——先只打 .app，自己补一次 ad-hoc 签名，
+# 再用 hdiutil 手动装成 DMG。签完再打包，用户拖进「应用程序」的那一份才是签好的。
+#
+# 除了存成 workflow 产物（下载需要登录 GitHub），DMG 会挂到固定的预发布 Release
+# （tag: mac-dev）上，每次构建覆盖上一份，这样拿到的是一条可以直接点开的链接。
+on:
+  push:
+    branches: main
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      # 改 Windows 那条不影响 Mac 包，反之也一样，别互相触发空跑。
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: macos-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dmg:
+    name: DMG 安装包（ad-hoc 签名）
+    runs-on: macos-14
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v5
+
+      # 先把 tag mac-dev 这个预发布建出来（已存在就算成功）。放在最前面是为了
+      # 省时间：token 权限这类问题在这里几十秒就能看出来，不用等打完包才发现挂不上。
+      # 失败不影响构建，报错原文会发到 annotation 上。
+      - name: 确保 mac-dev 预发布存在
+        shell: bash
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          notes='自动构建的 macOS 安装包（Apple Silicon，ad-hoc 签名，未通过苹果公证）。
+          第一次打开需要在「访达」里右键 →「打开」，仍然打不开就去「系统设置 → 隐私与安全性」点「仍要打开」。
+          这一条由 GitHub Actions 在每次推送到 main 后覆盖，永远对应仓库最新代码。
+          正式版本请看 tag `v*`。'
+          out=$(mktemp)
+          gh release create mac-dev \
+            --target "${{ github.sha }}" \
+            --prerelease \
+            --title "macOS 安装包（自动构建）" \
+            --notes "$notes" >"$out" 2>&1
+          code=$?
+          if [ $code -ne 0 ] && ! grep -qi "already exists" "$out"; then
+            echo "::error::创建 Release 失败（退出码 $code）：$(tr '\n' ' ' <"$out")"
+            exit 1
+          fi
+          echo "mac-dev 可用：$(cat "$out" | tr '\n' ' ')"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: 安装前端依赖
+        run: npm ci
+
+      # 基础配置里 createUpdaterArtifacts 是 true，那是上游作者的自动更新用的，
+      # 私钥不在本仓库，带上它构建会直接失败；本 fork 的界面里没有检查更新的入口。
+      # --bundles app：只要 .app，DMG 下一步自己打。
+      - name: 打包 .app
+        run: |
+          npx tauri build \
+            --config src-tauri/tauri.macos.conf.json \
+            --config '{"bundle":{"createUpdaterArtifacts":false}}' \
+            --bundles app
+
+      # ad-hoc 签名（签名身份是 "-"）：不需要证书。装到别人机器上会被 Gatekeeper
+      # 拦一次，这是自用/小范围分发的代价，买证书不在这次计划的范围内。
+      - name: 签名并装成 DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          arch=$(uname -m)
+          conf=src-tauri/tauri.conf.json
+          name=$(node -p "require('./$conf').productName")
+          version=$(node -p "require('./$conf').version")
+          bundle_dir=src-tauri/target/release/bundle
+          app="$bundle_dir/macos/$name.app"
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+
+          stage=$(mktemp -d)
+          mkdir -p "$stage/$name"
+          cp -R "$app" "$stage/$name/"
+          ln -s /Applications "$stage/$name/Applications"
+
+          mkdir -p "$bundle_dir/dmg"
+          dmg="$bundle_dir/dmg/${name}_${version}_${arch}.dmg"
+          rm -f "$dmg"
+          hdiutil create -volname "$name" -srcfolder "$stage/$name" -ov -format UDZO "$dmg" >/dev/null
+          rm -rf "$stage"
+          ls -lh "$dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tiez-macos-installer
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 30
+
+      # 覆盖上传：Release 页面上永远只有当前这一份，不会越积越多。
+      # 失败不算构建失败（DMG 已经是 workflow 产物了），但一定要把报错原文贴到
+      # annotation 上：日志正文要登录才看得到，annotation 不用。
+      #
+      # `shell: bash` 自带 -e：任何一条命令失败都会当场中止整个步骤，页面上只留
+      # 一个退出码。这里显式关掉它，改成每条命令自己检查、自己把原文发出来。
+      - name: 上传安装包到 mac-dev
+        shell: bash
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          dmg=$(ls src-tauri/target/release/bundle/dmg/*.dmg | head -1)
+          out=$(mktemp)
+          gh release upload mac-dev "$dmg" --clobber >"$out" 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "::error::上传安装包失败（退出码 $code）：$(tr '\n' ' ' <"$out")"
+            exit 1
+          fi
+          echo "::notice::https://github.com/${{ github.repository }}/releases/tag/mac-dev"
