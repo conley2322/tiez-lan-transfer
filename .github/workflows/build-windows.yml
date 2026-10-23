@@ -13,7 +13,6 @@ on:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
@@ -66,17 +65,33 @@ jobs:
 
       # 预发布 + 覆盖上传：Release 页面上永远只有当前这一份，不会越积越多。
       # Windows runner 默认用 PowerShell，这一步是 shell 脚本，必须点名 bash。
+      #
+      # 失败不算构建失败（安装包在「产物」那一步已经上传成 workflow 产物了），但一定要把
+      # gh 的原文贴到 annotation 上：日志正文要登录才看得到，annotation 不用。
       - name: 挂到 win-dev 预发布
         shell: bash
+        continue-on-error: true
         run: |
-          set -euo pipefail
+          set -uo pipefail
           exe=$(ls src-tauri/target/release/bundle/nsis/*.exe | head -1)
           notes='自动构建的 Windows 安装包（未签名，第一次运行需要点「更多信息 → 仍要运行」）。
           这一条由 GitHub Actions 在每次推送到 main 后覆盖，永远对应仓库最新代码。
           正式版本请看 tag `v*`。'
+          err=$(mktemp)
+          # checkout 之后 HEAD 是分离的，不指定 target 时 gh 会拿不到分支名，
+          # 建 tag 这一步就会失败；直接写死这次构建的 commit。
           gh release create win-dev \
+            --target "${{ github.sha }}" \
             --prerelease \
             --title "Windows 安装包（自动构建）" \
-            --notes "$notes" 2>/dev/null || true
-          gh release upload win-dev "$exe" --clobber
-          echo "https://github.com/${{ github.repository }}/releases/tag/win-dev"
+            --notes "$notes" 2>"$err"
+          code=$?
+          if [ $code -ne 0 ] && ! grep -qi "already exists" "$err"; then
+            echo "::error::创建 Release 失败（gh 退出码 $code）：$(tr '\n' ' ' <"$err")"
+            exit 1
+          fi
+          if ! gh release upload win-dev "$exe" --clobber 2>"$err"; then
+            echo "::error::上传安装包失败：$(tr '\n' ' ' <"$err")"
+            exit 1
+          fi
+          echo "::notice::https://github.com/${{ github.repository }}/releases/tag/win-dev"
