@@ -180,7 +180,9 @@ bash ./bundle_dmg.sh --skip-jenkins --volname "TieZ 1.0.0" \
 这个不在本机打：Windows 交叉编译在本机过不去，安装包由 GitHub Actions 的 `windows-latest` 打。推一次 main（或到 Actions 里手动运行「打包 Windows 安装包」）之后，产物出现在两个地方：
 
 - Release 页 tag `win-dev` 上的 `TieZ_1.0.0_x64-setup.exe`（每次构建覆盖上一份）；
-- 那次运行的 workflow 产物 `tiez-windows-installer`。
+- 那次运行的 workflow 产物 `tiez-windows-installer`（下载要登录 GitHub）。
+
+挂 Release 那一步失败不会让构建变红——安装包已经在 workflow 产物里了，失败原因会打在那次运行的 annotation 上。
 
 想在本地看命令长什么样，等价的一条是：
 
