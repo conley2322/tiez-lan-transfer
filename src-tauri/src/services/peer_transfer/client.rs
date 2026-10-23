@@ -764,6 +764,19 @@ pub fn cancel_peer_transfer(app_handle: AppHandle, group: String) -> bool {
     cancel(&app_handle, group.trim())
 }
 
+/// The progress card opens on the first event, which can be before its page is
+/// listening. An empty card asks this before hiding: it has nothing to show,
+/// but it must not disappear while the transfer that opened it is still on.
+#[tauri::command]
+pub fn has_active_peer_transfer(app: AppHandle) -> bool {
+    let state = app.state::<PeerTransferRegistryState>();
+    state
+        .0
+        .lock()
+        .map(|registry| !registry.active.is_empty())
+        .unwrap_or(false)
+}
+
 /// Inbound progress, from the shared upload pipeline (handlers.rs).
 pub fn notify_inbound(
     app: &AppHandle,

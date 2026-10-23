@@ -172,6 +172,7 @@ export const sendFiles = (peerIds: string[], paths: string[], batchName: string 
     invoke<string>("send_files_to_peers", { peerIds, paths, batchName });
 export const retryTransfer = (group: string) => invoke<string>("retry_peer_transfer", { group });
 export const cancelTransfer = (group: string) => invoke<boolean>("cancel_peer_transfer", { group });
+export const hasActiveTransfer = () => invoke<boolean>("has_active_peer_transfer");
 export const listTransfers = (limit?: number) =>
     invoke<TransferRow[]>("list_peer_transfers", { limit });
 export const clearTransfers = () => invoke<number>("clear_peer_transfers");

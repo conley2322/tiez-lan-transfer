@@ -1,11 +1,14 @@
-//! The screen-corner drop box: a capsule parked in a corner that opens into the
-//! peer list while a file is being dragged over it.
+//! The screen-corner drop box: a small icon that appears while a file is being
+//! dragged and opens into the peer list when the file is over it.
 //!
 //! One window, two sizes, because a transparent always-on-top rectangle takes
-//! the clicks away from whatever is underneath it — so it is only ever as big
-//! as what it shows. The page does the drawing and the hit-testing (which
-//! avatar the file is over); this module only decides where the rectangle sits
-//! and how tall it is.
+//! the clicks away from whatever is underneath it — so it is hidden until a
+//! drag starts, and only ever as big as what it shows. The page does the drawing
+//! and the hit-testing (which avatar the file is over); this module decides
+//! where the rectangle sits, how tall it is, and when it is on screen at all.
+
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 use serde::Serialize;
 use tauri::{
@@ -17,8 +20,9 @@ use crate::database::DbState;
 use crate::infrastructure::repository::settings_repo::SettingsRepository;
 
 pub const CORNER_LABEL: &str = "corner";
-/// On by default: on a Mac this is the send entry point, and a quiet capsule in
-/// the corner is a much smaller ask than the right-click menu it stands in for.
+/// On by default: on a Mac this is the send entry point, and a quiet icon that
+/// only appears during a drag is a much smaller ask than the right-click menu
+/// it stands in for.
 pub const ENABLED_KEY: &str = "app.corner_box_enabled";
 /// `top-right` | `top-left`. The right is the default even though the menu bar
 /// is crowded there — that side is where the window close buttons live, so the
@@ -37,10 +41,9 @@ pub const FAVORITES_KEY: &str = "peer_corner_favorites_only";
 const MIN_OPACITY: u8 = 40;
 const DEFAULT_OPACITY: u8 = 80;
 
-/// The prototype's 34×120 capsule plus a transparent border, so a drag that
-/// lands slightly off still enters.
-const BAR_WIDTH: f64 = 46.0;
-const BAR_HEIGHT: f64 = 132.0;
+/// The icon is drawn at 40×40 with a transparent border around it, so a drag
+/// that lands slightly off still enters.
+const ICON_SIZE: f64 = 48.0;
 /// The 190px list panel from the prototype, with no transparent border: in the
 /// expanded state the window *is* the panel.
 const PANEL_WIDTH: f64 = 190.0;
@@ -54,6 +57,12 @@ const TOP_MARGIN: f64 = 6.0;
 /// `send_files_to_peers` caps a batch at 8 peers; a taller box than the screen
 /// helps nobody, and the settings list is the place for the rest.
 const MAX_ROWS: usize = 8;
+/// How long the page gets to show the ✓ / ! after a drag ends before Rust
+/// hides the window anyway — the page normally asks first, sooner.
+const END_NOTICE_MS: u64 = 3000;
+/// Bumped for every drag so a fallback scheduled by an earlier drag cannot
+/// close the icon of a newer one.
+static DRAG_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -113,7 +122,7 @@ fn persist(app: &AppHandle, key: &str, value: &str) -> Result<(), String> {
 
 fn size_for(expanded: bool, rows: usize) -> (f64, f64) {
     if !expanded {
-        return (BAR_WIDTH, BAR_HEIGHT);
+        return (ICON_SIZE, ICON_SIZE);
     }
     let rows = rows.clamp(1, MAX_ROWS) as f64;
     (
@@ -123,7 +132,7 @@ fn size_for(expanded: bool, rows: usize) -> (f64, f64) {
 }
 
 /// Move the window so the corner it is drawn against stays put while it grows:
-/// the capsule and the list both hang from the same screen corner.
+/// the icon and the list both hang from the same screen corner.
 fn place(window: &WebviewWindow, width: f64, height: f64) -> Result<(), String> {
     let app = window.app_handle();
     let monitor = app
@@ -157,44 +166,86 @@ fn place(window: &WebviewWindow, width: f64, height: f64) -> Result<(), String> 
         .map_err(|error| error.to_string())
 }
 
-/// Build the box if it is not there yet, and make sure it is on screen.
-pub fn show(app: &AppHandle) -> Result<(), String> {
-    let window = match app.get_webview_window(CORNER_LABEL) {
-        Some(window) => window,
-        None => WebviewWindowBuilder::new(
-            app,
-            CORNER_LABEL,
-            WebviewUrl::App("index.html?window=corner".into()),
-        )
-        .title("TieZ 拖拽框")
-        // Built hidden, then placed: a window at (0,0) for one frame is a flash
-        // in the wrong corner, and this is the first thing the user sees.
-        .visible(false)
-        .decorations(false)
-        .transparent(true)
-        .always_on_top(true)
-        .visible_on_all_workspaces(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .maximizable(false)
-        .minimizable(false)
-        .closable(false)
-        .shadow(false)
-        // A HUD the user never types into. Without this the box could take the
-        // keyboard from Finder mid-drag.
-        .focusable(false)
-        .inner_size(BAR_WIDTH, BAR_HEIGHT)
-        .build()
-        .map_err(|error| error.to_string())?,
-    };
+/// Build the box if it is not there yet. Never shown from here: at boot the
+/// page has to be loading while nothing is on screen, and during a drag the
+/// show happens one call later.
+fn ensure(app: &AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(CORNER_LABEL) {
+        return Ok(window);
+    }
+    let window = WebviewWindowBuilder::new(
+        app,
+        CORNER_LABEL,
+        WebviewUrl::App("index.html?window=corner".into()),
+    )
+    .title("TieZ 拖拽框")
+    // Built hidden, then placed: a window at (0,0) for one frame is a flash
+    // in the wrong corner, and this is the first thing the user sees.
+    .visible(false)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .visible_on_all_workspaces(true)
+    .skip_taskbar(true)
+    .resizable(false)
+    .maximizable(false)
+    .minimizable(false)
+    .closable(false)
+    .shadow(false)
+    // A HUD the user never types into. Without this the box could take the
+    // keyboard from Finder mid-drag.
+    .focusable(false)
+    .inner_size(ICON_SIZE, ICON_SIZE)
+    .build()
+    .map_err(|error| error.to_string())?;
 
     #[cfg(target_os = "macos")]
     crate::infrastructure::macos_api::window::configure_corner_drop_window(&window);
 
-    place(&window, BAR_WIDTH, BAR_HEIGHT)?;
-    window.show().map_err(|error| error.to_string())?;
+    Ok(window)
+}
+
+/// Build it (if needed) and park it, hidden, at the collapsed size and corner.
+/// Doing this at boot or on enable makes the first drag cost a `show()`, not a
+/// fresh WebView that cannot be aimed at until it has loaded.
+pub fn prepare(app: &AppHandle) -> Result<(), String> {
+    let window = ensure(app)?;
+    place(&window, ICON_SIZE, ICON_SIZE)?;
     let _ = app.emit_to(CORNER_LABEL, "corner-side-changed", side(app));
     Ok(())
+}
+
+/// The native drag monitor saw a file leave a window. This is the only path
+/// that puts the box on screen; the page keeps it a small icon until the file
+/// is over it.
+pub fn show_for_drag(app: &AppHandle) -> Result<(), String> {
+    if !is_enabled(app) {
+        return Ok(());
+    }
+    DRAG_GENERATION.fetch_add(1, Ordering::SeqCst);
+    let window = ensure(app)?;
+    // A previous drag may have ended with the page still expanded.
+    place(&window, ICON_SIZE, ICON_SIZE)?;
+    window.show().map_err(|error| error.to_string())?;
+    let _ = app.emit_to(CORNER_LABEL, "corner-drag-active", true);
+    Ok(())
+}
+
+/// The drag is over — dropped, cancelled, or the button came up over another
+/// app. The page keeps a ✓ / ! icon up for a moment and then hides the window;
+/// the timeout is the guard for a page that never heard this event.
+pub fn end_drag(app: &AppHandle) {
+    let generation = DRAG_GENERATION.load(Ordering::SeqCst);
+    let _ = app.emit_to(CORNER_LABEL, "corner-drag-active", false);
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(END_NOTICE_MS)).await;
+        if DRAG_GENERATION.load(Ordering::SeqCst) != generation {
+            return;
+        }
+        let hide_handle = handle.clone();
+        let _ = handle.run_on_main_thread(move || hide(&hide_handle));
+    });
 }
 
 pub fn hide(app: &AppHandle) {
@@ -203,11 +254,17 @@ pub fn hide(app: &AppHandle) {
     }
 }
 
-/// Start at boot when the user has not turned it off.
+/// Called by the page once its ✓ / ! has been visible long enough.
+#[tauri::command]
+pub fn hide_corner_box(app: AppHandle) {
+    hide(&app);
+}
+
+/// Load the page at boot, hidden, when the user has not turned the box off.
 pub fn start_if_enabled(app: &AppHandle) {
     if is_enabled(app) {
-        if let Err(error) = show(app) {
-            eprintln!(">>> [STARTUP] corner drop box did not open: {error}");
+        if let Err(error) = prepare(app) {
+            eprintln!(">>> [STARTUP] corner drop box did not load: {error}");
         }
     }
 }
@@ -267,7 +324,7 @@ pub fn roster_changed(app: &AppHandle) {
 pub fn set_corner_box_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
     persist(&app, ENABLED_KEY, if enabled { "true" } else { "false" })?;
     if enabled {
-        show(&app)?;
+        prepare(&app)?;
     } else {
         hide(&app);
     }
@@ -296,7 +353,7 @@ pub fn set_corner_box_side(app: AppHandle, side: String) -> Result<(), String> {
 }
 
 /// What the page calls when a drag enters or leaves: the window grows into the
-/// list of `rows` peers, then back to the capsule.
+/// list of `rows` peers, then back to the icon.
 #[tauri::command]
 pub fn set_corner_box_layout(app: AppHandle, expanded: bool, rows: usize) -> Result<(), String> {
     let Some(window) = app.get_webview_window(CORNER_LABEL) else {
@@ -316,7 +373,7 @@ mod tests {
     fn the_box_grows_downward_from_the_same_corner() {
         // `place` keeps `y` fixed and only the right (or left) edge fixed, so the
         // two sizes share a corner. What the geometry test can pin is the size.
-        assert_eq!(size_for(false, 0), (BAR_WIDTH, BAR_HEIGHT));
+        assert_eq!(size_for(false, 0), (ICON_SIZE, ICON_SIZE));
         assert_eq!(
             size_for(true, 1),
             (PANEL_WIDTH, PANEL_HEADER + ROW_HEIGHT + PANEL_FOOTER)

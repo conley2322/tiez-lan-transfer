@@ -25,41 +25,35 @@ html.window-corner .app-container {
   font-family: var(--font-main);
 }
 
-/* ── collapsed: the capsule ─────────────────────────────────── */
+/* ── collapsed: the drag icon ───────────────────────────────── */
 
-.corner-bar {
-  width: 34px;
-  height: 120px;
+.corner-icon {
+  width: 40px;
+  height: 40px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0;
   border-radius: var(--radius-lg);
   background: color-mix(
     in srgb,
-    var(--hud-bar) calc(var(--corner-opacity) * 1%),
+    var(--hud-panel) calc(var(--corner-opacity) * 1%),
     transparent
   );
-  border: 0.5px solid var(--hud-bar-line);
+  border: 0.5px solid var(--hud-panel-line);
   color: var(--on-hud);
-  font-size: var(--font-size-2xs);
-  line-height: 1.35;
-  text-align: center;
-}
-
-.corner-bar-mark {
   font-size: var(--font-size-lg);
+  line-height: 1;
 }
 
-.corner-bar-note {
-  max-width: 34px;
-  overflow-wrap: break-word;
-  color: var(--on-hud);
+.corner-icon.is-ok {
+  color: var(--status-success);
 }
 
-html.window-corner-left .corner-bar-mark {
+.corner-icon.is-bad {
+  color: var(--status-danger);
+}
+
+html.window-corner-left .corner-icon-mark {
   /* The arrow points where the file has to travel. */
   transform: scaleX(-1);
 }

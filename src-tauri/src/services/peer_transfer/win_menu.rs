@@ -265,7 +265,7 @@ mod shell {
 
     use super::MenuItem;
 
-    /// Key name, not shown to the user; the display text is the default value.
+    /// Key name, not shown to the user; the display text is `MUIVerb`.
     const VERB_KEY: &str = "TieZSend";
 
     const PLACES: [&str; 2] = [
@@ -296,7 +296,16 @@ mod shell {
             let (verb, _) = hkcu
                 .create_subkey(&path)
                 .map_err(|error| format!("写入右键菜单失败：{error}"))?;
-            write_default(&verb, title)?;
+            // Explorer only treats a verb as a cascading menu when its own
+            // default value is empty and `SubCommands` is present. Writing the
+            // label to the default value instead makes it a plain command with
+            // no `command` subkey — clicking it then falls back to opening the
+            // file, which is the "no associated app" error. The label belongs
+            // in `MUIVerb`.
+            verb.set_value("MUIVerb", &title.to_string())
+                .map_err(|error| format!("写入右键菜单名称失败：{error}"))?;
+            verb.set_value("SubCommands", &String::new())
+                .map_err(|error| format!("写入右键菜单结构失败：{error}"))?;
             verb.set_value("Icon", &format!("\"{exe}\",0"))
                 .map_err(|error| format!("写入右键菜单图标失败：{error}"))?;
             let rows = verb
@@ -308,7 +317,9 @@ mod shell {
                     .create_subkey(&item.key)
                     .map_err(|error| format!("写入 {} 失败：{error}", item.key))?
                     .0;
-                write_default(&entry, &item.label)?;
+                entry
+                    .set_value("MUIVerb", &item.label)
+                    .map_err(|error| format!("写入 {} 的名称失败：{error}", item.key))?;
                 entry
                     .set_value("Icon", &format!("\"{exe}\",0"))
                     .map_err(|error| format!("写入右键菜单图标失败：{error}"))?;
@@ -326,11 +337,6 @@ mod shell {
         Ok(())
     }
 
-    fn write_default(key: &RegKey, text: &str) -> Result<(), String> {
-        key.set_value("", &text.to_string())
-            .map_err(|error| format!("写入右键菜单名称失败：{error}"))
-    }
-
     /// Labels under the files location. `Ok` even when empty: an empty submenu
     /// is a real state the page should be able to show.
     pub fn entries() -> Result<Vec<String>, String> {
@@ -346,7 +352,12 @@ mod shell {
             let Ok(entry) = rows.open_subkey(&name) else {
                 continue;
             };
-            let label: String = entry.get_value("").unwrap_or_default();
+            // The label lives in `MUIVerb`; the fallback keeps menus written by
+            // older builds readable until the next `sync` rewrites them.
+            let label = entry
+                .get_value::<String, _>("MUIVerb")
+                .or_else(|_| entry.get_value::<String, _>(""))
+                .unwrap_or_default();
             // Undo the menu-accelerator escape, so the page prints the name the
             // user typed and not the bytes Explorer was given.
             let label = label.replace("&&", "&");

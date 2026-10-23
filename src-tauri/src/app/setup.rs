@@ -95,11 +95,14 @@ pub fn init(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     // 8. Menu-bar icon — the only entry point from here on.
     crate::app::tray::setup(app);
 
-    // 9. The send entry point on a Mac: the capsule in the screen corner. It is
-    // the one window this app puts on screen by itself, because a file can only
-    // be dropped on something that is already there.
+    // 9. The send entry point on a Mac: the icon in the screen corner. It is
+    // loaded hidden and shown only while a file is being dragged; no window
+    // sits over the user's screen when there is nothing to drop.
     #[cfg(target_os = "macos")]
-    crate::app::corner_box::start_if_enabled(&app_handle);
+    {
+        crate::app::corner_box::start_if_enabled(&app_handle);
+        crate::infrastructure::macos_api::corner_drag::start(app_handle.clone());
+    }
 
     #[cfg(target_os = "windows")]
     {

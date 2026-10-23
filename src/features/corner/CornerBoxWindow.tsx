@@ -1,9 +1,10 @@
 // The screen-corner drop box (window=corner).
 //
-// It draws the two states — a capsule and the peer list — and decides which
-// machine a file is being dropped on. The window's size and screen position are
-// Rust's job (`app/corner_box.rs`), because only it can keep a window anchored
-// to a screen corner while it grows.
+// It draws the two states — a small icon and the peer list — and decides which
+// machine a file is being dropped on. Rust shows the window only while a file
+// is being dragged and hides it again afterwards; the size and screen position
+// are its job too (`app/corner_box.rs`), because only it can keep a window
+// anchored to a screen corner while it grows.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -26,16 +27,13 @@ type BoxState = {
     favoritesOnly: boolean;
 };
 
-/** 「已发给 · 书房的MacBook」 is far too long for a 34px column. The capsule is
-    120px tall and holds four lines of 10px text, so the note is cut at 20. */
-const BAR_NOTE_MAX = 20;
+/** What the icon says once the drag is over: sent, failed, or just a hint. */
+type Outcome = "ok" | "bad" | null;
 
-const truncate = (text: string) => {
-    const characters = Array.from(text);
-    return characters.length > BAR_NOTE_MAX
-        ? `${characters.slice(0, BAR_NOTE_MAX).join("")}…`
-        : text;
-};
+/** How long the ✓ / ! stays up after a drop before the window hides. */
+const RESULT_VISIBLE_MS = 1900;
+/** A drop this soon after the drag ends is the one the result belongs to. */
+const DROP_GRACE_MS = 2500;
 
 /** 设置 → 角落拖拽框 → 不透明度. A percentage the stylesheet mixes the panel
     background with transparency by, so the text and border stay readable while
@@ -50,9 +48,14 @@ export default function CornerBoxWindow() {
     const [dragging, setDragging] = useState(false);
     const [hoverId, setHoverId] = useState<string | null>(null);
     const [side, setSide] = useState<string>("top-right");
-    /** What the capsule says instead of 「拖文件到这」 right after a drop. */
+    /** The tooltip / result text the icon carries, not a line next to it. */
     const [note, setNote] = useState<string | null>(null);
+    const [outcome, setOutcome] = useState<Outcome>(null);
     const noteTimer = useRef<number | null>(null);
+    /** When the last drop that has something to send happened. */
+    const sentAt = useRef(0);
+    /** Pending "the ✓ has been up long enough" hide. */
+    const hideTimer = useRef<number | null>(null);
     const rowsBox = useRef<HTMLDivElement | null>(null);
     const rows = useMemo(() => visiblePeers(peers), [peers]);
     // The drag listener is registered once and lives across peer updates, so
@@ -76,11 +79,31 @@ export default function CornerBoxWindow() {
         setLayout(false);
     }, [setLayout]);
 
-    const flash = useCallback((text: string) => {
+    const flash = useCallback((text: string, result: Outcome) => {
         setNote(text);
+        setOutcome(result);
         if (noteTimer.current !== null) window.clearTimeout(noteTimer.current);
+        // The normal path is the hide timer; this only clears a stale tooltip
+        // when the window stays up for the Rust-side fallback.
         noteTimer.current = window.setTimeout(() => setNote(null), 2600);
     }, []);
+
+    const cancelHide = useCallback(() => {
+        if (hideTimer.current !== null) {
+            window.clearTimeout(hideTimer.current);
+            hideTimer.current = null;
+        }
+    }, []);
+
+    const hideBox = useCallback(() => {
+        cancelHide();
+        sentAt.current = 0;
+        setDragging(false);
+        setHoverId(null);
+        setNote(null);
+        setOutcome(null);
+        invoke("hide_corner_box").catch(() => {});
+    }, [cancelHide]);
 
     useEffect(() => {
         let unlisteners: Array<() => void> = [];
@@ -105,10 +128,39 @@ export default function CornerBoxWindow() {
                 // Turned off and back on from 设置 reuses this same window, so it
                 // has to forget a note left over from before.
                 listen("corner-box-enabled-changed", () => {
+                    cancelHide();
+                    sentAt.current = 0;
                     setDragging(false);
                     setHoverId(null);
                     setNote(null);
+                    setOutcome(null);
                     poll();
+                }),
+                // Rust shows the window when a system-wide file drag starts
+                // and hides it when the button comes up. This page never sits
+                // on screen between the two.
+                listen<boolean>("corner-drag-active", (event) => {
+                    if (event.payload) {
+                        // A new drag: the previous ✓ or ! is not its result.
+                        cancelHide();
+                        sentAt.current = 0;
+                        setDragging(false);
+                        setHoverId(null);
+                        setNote(null);
+                        setOutcome(null);
+                        return;
+                    }
+                    if (Date.now() - sentAt.current >= DROP_GRACE_MS) {
+                        hideBox();
+                        return;
+                    }
+                    // A file just went to a peer: keep the ✓ / ! up for a
+                    // moment so the drop does not end in a silent vanishing.
+                    setDragging(false);
+                    setHoverId(null);
+                    setLayout(false);
+                    cancelHide();
+                    hideTimer.current = window.setTimeout(hideBox, RESULT_VISIBLE_MS);
                 }),
             ]);
             if (cancelled) events.forEach((unlisten) => unlisten());
@@ -121,7 +173,7 @@ export default function CornerBoxWindow() {
                 applyOpacity(state.opacity);
             })
             // A box that cannot ask which corner it is in still works: the
-            // capsule is centered, and only the arrow would face the wrong way.
+            // icon is centered, and only the arrow would face the wrong way.
             .catch(() => {});
         // A peer only ages into 离线 when a beacon stops arriving, and nothing
         // emits that — the list needs its own clock.
@@ -131,7 +183,7 @@ export default function CornerBoxWindow() {
             window.clearInterval(timer);
             unlisteners.forEach((unlisten) => unlisten());
         };
-    }, []);
+    }, [cancelHide, hideBox, setLayout]);
 
     useEffect(() => {
         const classList = document.documentElement.classList;
@@ -143,6 +195,7 @@ export default function CornerBoxWindow() {
     useEffect(
         () => () => {
             if (noteTimer.current !== null) window.clearTimeout(noteTimer.current);
+            if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);
         },
         [],
     );
@@ -172,8 +225,8 @@ export default function CornerBoxWindow() {
                     ? (paths[0].split(/[\\/]/).pop() ?? null)
                     : `${paths.length} 个文件`;
             invoke("send_files_to_peers", { peerIds: [deviceId], paths, batchName })
-                .then(() => flash(`已发给 · ${target ? peerLabel(target) : "对方"}`))
-                .catch((error) => flash(`发送失败 ${String(error)}`));
+                .then(() => flash(`已发给 · ${target ? peerLabel(target) : "对方"}`, "ok"))
+                .catch((error) => flash(`发送失败 ${String(error)}`, "bad"));
         },
         [flash],
     );
@@ -207,9 +260,15 @@ export default function CornerBoxWindow() {
                     const targetId = peerAtPoint(measureRows(), x, y);
                     const { paths } = payload;
                     closeBox();
-                    // Off the rows — the hint line, the padding, the bar itself:
+                    // Off the rows — the hint line, the padding, the icon itself:
                     // nobody was chosen, so nothing is sent.
-                    if (targetId && paths.length > 0) sendTo(targetId, paths);
+                    if (targetId && paths.length > 0) {
+                        // The native drag monitor reports the button release a
+                        // moment later; this is what tells that event to keep
+                        // the ✓ up instead of hiding at once.
+                        sentAt.current = Date.now();
+                        sendTo(targetId, paths);
+                    }
                 }
             });
             if (cancelled) stop();
@@ -224,11 +283,20 @@ export default function CornerBoxWindow() {
     const openSettings = () => invoke("open_settings_window", { tab: "peers" }).catch(() => {});
 
     if (!dragging) {
+        const mark = outcome === "ok" ? "✓" : outcome === "bad" ? "!" : "⇥";
         return (
             <div className="corner-box">
-                <div className="corner-bar" onClick={openSettings}>
-                    <span className="corner-bar-mark">⇥</span>
-                    <span className="corner-bar-note">{note ? truncate(note) : "拖文件到这"}</span>
+                <div
+                    className={[
+                        "corner-icon",
+                        outcome === "ok" ? "is-ok" : "",
+                        outcome === "bad" ? "is-bad" : "",
+                    ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    title={note ?? "拖文件到这里发送"}
+                >
+                    <span className="corner-icon-mark">{mark}</span>
                 </div>
             </div>
         );

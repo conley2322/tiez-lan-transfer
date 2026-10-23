@@ -14,33 +14,27 @@ import * as api from "../api";
 import type { TransferEvent } from "../api";
 import { formatBytes } from "../format";
 import type { LanT } from "../lanCopy";
-
-type Row = {
-    key: string;
-    group: string;
-    direction: string;
-    peerName: string;
-    fileName: string;
-    sent: number;
-    total: number;
-    status: string;
-    error: string;
-    at: number;
-};
+import {
+    mergeProgressRows,
+    removeBatchedRows,
+    running,
+    settleGroup,
+    type ProgressRow,
+} from "./progressRows";
 
 /** The card is 168px tall; a folder of 400 files does not get 400 bars. */
 const MAX_ROWS = 4;
+/** How long an event-less card waits before deciding it has nothing to show. */
+const EMPTY_CARD_MS = 5000;
 
-const running = (status: string) => status === "preparing" || status === "active";
-
-const percent = (row: Row) => {
+const percent = (row: ProgressRow) => {
     if (row.status === "done") return 100;
     if (row.total <= 0) return 0;
     return Math.min(99, Math.round((row.sent / row.total) * 100));
 };
 
 export default function ProgressFloat({ t }: { t: LanT }) {
-    const [rows, setRows] = useState<Row[]>([]);
+    const [rows, setRows] = useState<ProgressRow[]>([]);
     const holdRef = useRef(3);
 
     const dismiss = useCallback(() => {
@@ -56,42 +50,65 @@ export default function ProgressFloat({ t }: { t: LanT }) {
                 holdRef.current = state.holdSeconds;
             })
             .catch(() => {});
-        let unlisten: (() => void) | undefined;
+        let unlisteners: Array<() => void> = [];
         let cancelled = false;
         (async () => {
-            const stop = await listen<TransferEvent>("peer-transfer-progress", (event) => {
-                const came = event.payload;
-                setRows((current) => {
-                    const key = `${came.group}:${came.uploadId || came.fileName}`;
-                    const next: Row = {
-                        key,
-                        group: came.group,
-                        direction: came.direction,
-                        peerName: came.peerName,
-                        fileName: came.fileName,
-                        // A retry re-uses the upload id, so a done row is pinned
-                        // to the full size rather than to the last chunk's count.
-                        sent: came.status === "done" ? came.totalBytes : came.sentBytes,
-                        total: came.totalBytes,
-                        status: came.status,
-                        error: came.error ?? "",
-                        at: came.timestamp,
-                    };
-                    const index = current.findIndex((row) => row.key === key);
-                    if (index < 0) return [...current, next];
-                    const copy = [...current];
-                    copy[index] = next;
-                    return copy;
-                });
-            });
-            if (cancelled) stop();
-            else unlisten = stop;
+            const events = await Promise.all([
+                listen<TransferEvent>("peer-transfer-progress", (event) => {
+                    setRows((current) => mergeProgressRows(current, event.payload));
+                }),
+                // A group is over when this arrives. A file's terminal event can
+                // be lost or land before this page is listening; a row left
+                // "running" would keep the card on screen forever.
+                listen<{ group: string; status: string }>(
+                    "peer-transfer-group",
+                    (event) => {
+                        setRows((current) =>
+                            settleGroup(current, event.payload.group, event.payload.status),
+                        );
+                    },
+                ),
+            ]);
+            if (cancelled) events.forEach((stop) => stop());
+            else unlisteners = events;
         })();
         return () => {
             cancelled = true;
-            unlisten?.();
+            unlisteners.forEach((stop) => stop());
         };
     }, []);
+
+    // The window is opened by Rust on the first event, so a short transfer can
+    // finish before this page's listener exists. Nothing would ever update the
+    // empty card, so it closes itself instead of parking there — unless Rust
+    // still has a group running (`active` events are not emitted while the
+    // receiver decides), in which case the card is waiting, not stale.
+    useEffect(() => {
+        if (rows.length > 0) return;
+        let timer = 0;
+        let cancelled = false;
+        const check = () => {
+            api.hasActiveTransfer()
+                .then((active) => {
+                    if (cancelled) return;
+                    if (active) {
+                        timer = window.setTimeout(check, EMPTY_CARD_MS);
+                        return;
+                    }
+                    dismiss();
+                })
+                .catch(() => {
+                    // If the question cannot be asked, closing beats parking an
+                    // empty card on screen; later events reopen the window.
+                    if (!cancelled) dismiss();
+                });
+        };
+        timer = window.setTimeout(check, EMPTY_CARD_MS);
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [rows.length, dismiss]);
 
     // 「收发都显，完成自动消失」 — but only when nothing failed. A red row is the
     // one thing on this card that still needs reading, so it waits for a click.
@@ -104,7 +121,7 @@ export default function ProgressFloat({ t }: { t: LanT }) {
     }, [rows, dismiss]);
 
     const visible = useMemo(() => {
-        const order = (row: Row) =>
+        const order = (row: ProgressRow) =>
             row.status === "failed" ? 0 : running(row.status) ? 1 : 2;
         return [...rows].sort((a, b) => order(a) - order(b) || b.at - a.at);
     }, [rows]);
@@ -164,14 +181,17 @@ export default function ProgressFloat({ t }: { t: LanT }) {
                                     type="button"
                                     className="float-act"
                                     onClick={() => {
+                                        // The retry re-runs the whole group with
+                                        // new upload ids, so nothing from the
+                                        // previous run would ever update again.
+                                        const startedAt = Date.now();
                                         api.retryTransfer(row.group)
                                             .then(() =>
                                                 setRows((current) =>
-                                                    current.map((item) =>
-                                                        item.group === row.group &&
-                                                        item.status === "failed"
-                                                            ? { ...item, status: "preparing" }
-                                                            : item,
+                                                    removeBatchedRows(
+                                                        current,
+                                                        row.group,
+                                                        startedAt,
                                                     ),
                                                 ),
                                             )
@@ -185,7 +205,15 @@ export default function ProgressFloat({ t }: { t: LanT }) {
                                     type="button"
                                     className="float-act"
                                     onClick={() => {
-                                        api.cancelTransfer(row.group).catch(() => {});
+                                        // A cancelled group ends without a
+                                        // terminal progress event, so these rows
+                                        // would otherwise stay "running" and
+                                        // keep the card up for good.
+                                        api.cancelTransfer(row.group)
+                                            .then((cancelled) => {
+                                                if (cancelled) dismiss();
+                                            })
+                                            .catch(() => {});
                                     }}
                                 >
                                     {t("float_cancel")}

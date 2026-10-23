@@ -120,7 +120,7 @@ const zh = {
     // ── 角落拖拽框 ───────────────────────────────────────────
     corner_title: "Mac 角落拖拽框",
     corner_enable: "启用屏幕角落放置框",
-    corner_enable_hint: "平时是一条低透明度细条，拖起文件靠近时展开用户列表。",
+    corner_enable_hint: "拖起文件时，屏幕角落才出现一个小图标；文件放到图标上才展开用户列表。",
     corner_side: "位置",
     side_top_right: "右上角",
     side_top_left: "左上角",
@@ -318,7 +318,7 @@ const en: Record<keyof typeof zh, string> = {
 
     corner_title: "Mac Corner Drop Box",
     corner_enable: "Show the corner drop box",
-    corner_enable_hint: "Normally a faint strip; it expands into the list as a dragged file comes near.",
+    corner_enable_hint: "A small icon appears in the corner only while you drag a file; the user list opens when the file is over it.",
     corner_side: "Side",
     side_top_right: "Top right",
     side_top_left: "Top left",
@@ -513,7 +513,7 @@ const tw: Record<keyof typeof zh, string> = {
 
     corner_title: "Mac 角落拖曳框",
     corner_enable: "啟用螢幕角落放置框",
-    corner_enable_hint: "平時是一條低透明度細條，拖起檔案靠近時展開使用者清單。",
+    corner_enable_hint: "拖起檔案時，螢幕角落才出現一個小圖示；檔案放到圖示上才展開使用者清單。",
     corner_side: "位置",
     side_top_right: "右上角",
     side_top_left: "左上角",
