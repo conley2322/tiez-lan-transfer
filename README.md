@@ -8,10 +8,10 @@
 
 ## 先把它跑起来（3 台电脑的实际步骤）
 
-1. **每台电脑都装一份。** 苹果芯片的 Mac 下载 `TieZ_1.0.0_arm64.dmg`，打开后把图标拖进 Applications；Windows（10/11，x64）下载 `TieZ_1.0.0_x64-setup.exe`，双击安装即可，装在您当前用户下（不需要管理员权限）。
+1. **每台电脑都装一份。** 安装包都在这个仓库的 Releases 页上：苹果芯片的 Mac 下载 tag `mac-dev` 里的 `TieZ_1.0.0_arm64.dmg`，打开后把图标拖进 Applications；Windows（10/11，x64）下载 tag `win-dev` 里的 `TieZ_1.0.0_x64-setup.exe`，双击安装即可，装在您当前用户下（不需要管理员权限）。这两条是每次推 main 自动重新打的，永远对应仓库最新代码，不需要登录 GitHub 就能下载。
    安装包没有付费签名，第一次会被拦：Mac 上如果提示「无法验证开发者」，在访达里右键这个 app →「打开」→ 再点一次「打开」，只需第一次这么做；Windows 上 SmartScreen 会弹「已保护你的电脑」，点「更多信息」→「仍要运行」。
    装好后的第一次启动，Windows 会弹窗问「是否允许此应用对你的设备进行访问」，**勾上「专用网络」再点允许**，不勾就互相找不到——软件自己不会改防火墙设置，这个同意只能你给。
-   二进制文件不入库，没有 Releases 时照文末「开发」里的打包小节自己构建。
+   想要 Intel 的 Mac 包，或者不想用 CI 出的这一份，照文末「开发」里的打包小节自己构建。
 2. **装完不会弹任何窗口。** 这是有意的：它是个后台程序。Mac 去看屏幕右上角那个小竖条和菜单栏图标；Windows 去看右下角通知区（被藏起来的话，点一下那个向上的小箭头把它拖出来）。
 3. **点图标 → 设置… → 设备与用户**，给自己这台电脑起个名字（比如「书房的MacBook」）、挑一个头像颜色。三台电脑分别填，拖拽框和右键菜单都靠这个名字认人。
 4. **在同一页点「生成配对码」**，把屏幕上那串码念给对方，或者拍照发过去。
@@ -155,6 +155,15 @@ src-tauri/tauri.windows.conf.json                 Windows 的全部打包配置
 
 ### 打包 macOS 安装包
 
+安装包由 GitHub Actions 的 `macos-14` 打。推一次 main（或到 Actions 里手动运行「打包 macOS 安装包」）之后，产物出现在两个地方：
+
+- Release 页 tag `mac-dev` 上的 `TieZ_1.0.0_arm64.dmg`（每次构建覆盖上一份）；
+- 那次运行的 workflow 产物 `tiez-macos-installer`（下载要登录 GitHub）。
+
+那条构建没有把 DMG 交给 `tauri build`：CI 上没有 Developer ID 证书，Tauri 打完 `.app` 直接交给 `bundle_dmg.sh` 的话，那份 `.app` 只有链接器签名，`codesign --verify` 会报 "code has no resources"。所以它分三步——`--bundles app` 只出 `.app`、`codesign --sign -` 补一次 ad-hoc 签名、`hdiutil create` 自己装成 DMG。挂 Release 那一步失败不会让构建变红，原因打在那次运行的 annotation 上。
+
+想在本地自己打一份，命令是：
+
 ```bash
 npx tauri build --target aarch64-apple-darwin --bundles app \
   --config '{"bundle":{"createUpdaterArtifacts":false}}'
@@ -162,7 +171,7 @@ codesign --force --deep --sign - \
   src-tauri/target/aarch64-apple-darwin/release/bundle/macos/TieZ.app
 ```
 
-`--bundles dmg` 这一步经常失败，原因有两个：`create-dmg` 的中间镜像被写进了源目录，于是它把自己反复塞进自己的镜像，直到报「设备上无剩余空间」；以及它的 Finder 摆图步骤需要自动化授权。签名后用 `--skip-jenkins` 手动出包（只少掉图标摆位，拖拽安装不受影响）：
+`--bundles dmg` 这一步在本机经常失败，原因有两个：`create-dmg` 的中间镜像被写进了源目录，于是它把自己反复塞进自己的镜像，直到报「设备上无剩余空间」；以及它的 Finder 摆图步骤需要自动化授权。签名后用 `--skip-jenkins` 手动出包（只少掉图标摆位，拖拽安装不受影响）：
 
 ```bash
 cd src-tauri/target/aarch64-apple-darwin/release/bundle/dmg
@@ -173,7 +182,7 @@ bash ./bundle_dmg.sh --skip-jenkins --volname "TieZ 1.0.0" \
   --no-internet-enable "$PWD/TieZ_1.0.0_aarch64.dmg" "../macos"
 ```
 
-本地自用走 ad-hoc 签名就够；要发给别人的安装包需要正式签名，未签名的安装包在对方机器上需要右键「打开」绕过 Gatekeeper。
+本地自用走 ad-hoc 签名就够；要发给别人的安装包需要正式签名，未签名的安装包在对方机器上需要右键「打开」绕过 Gatekeeper。Intel 芯片的 Mac 包两种方法都还没试过。
 
 ### 打包 Windows 安装包
 
