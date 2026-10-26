@@ -454,7 +454,9 @@ pub fn seed_defaults(conn: &Connection) -> Result<()> {
         [],
     );
     let _ = conn.execute(
-        "INSERT OR IGNORE INTO settings (key, value) VALUES ('app.corner_box_side', 'top-right')",
+        // The box appears beside the file being dragged, not in a fixed corner;
+        // a corner is still one click away in 设置 → 角落拖拽框 → 位置.
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('app.corner_box_side', 'follow')",
         [],
     );
     let _ = conn.execute(

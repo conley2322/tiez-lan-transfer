@@ -512,7 +512,34 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
         conn.execute("INSERT INTO schema_migrations (version) VALUES (23)", [])?;
     }
 
+    // Migration 24: the drop box follows the drag now. Every install from the
+    // corner-only version seeded `app.corner_box_side` with `top-right`, so
+    // that value is the old default rather than a choice the user made — it
+    // has to be cleared or the box never appears beside the file. `top-left`
+    // is left alone: nothing ever seeded it.
+    if current_version < 24 {
+        // A fixture may stop before migration 1 created the table; a real
+        // database always has it.
+        if has_table(conn, "settings")? {
+            conn.execute(
+                "UPDATE settings SET value = 'follow'
+                 WHERE key = 'app.corner_box_side' AND value = 'top-right'",
+                [],
+            )?;
+        }
+        conn.execute("INSERT INTO schema_migrations (version) VALUES (24)", [])?;
+    }
+
     Ok(())
+}
+
+fn has_table(conn: &Connection, table_name: &str) -> Result<bool> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+        [table_name],
+        |row| row.get(0),
+    )?;
+    Ok(count > 0)
 }
 
 fn has_column(conn: &Connection, table_name: &str, column_name: &str) -> Result<bool> {
@@ -580,7 +607,53 @@ mod tests {
                 row.get(0)
             })
             .expect("read schema version");
-        assert_eq!(version, 23);
+        assert_eq!(version, 24);
+    }
+
+    #[test]
+    fn migration_24_moves_the_old_seeded_corner_to_following_the_drag() {
+        let conn = Connection::open_in_memory().expect("open database");
+        conn.execute_batch(
+            "
+            CREATE TABLE schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO schema_migrations(version) VALUES (23);
+            CREATE TABLE clipboard_history (id INTEGER PRIMARY KEY, note TEXT NOT NULL DEFAULT '');
+            CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            INSERT INTO settings(key, value) VALUES ('app.corner_box_side', 'top-right');
+            INSERT INTO settings(key, value) VALUES ('app.corner_box_opacity', '100');
+            ",
+        )
+        .expect("create version 23 fixture");
+
+        run_migrations(&conn).expect("run update migrations");
+
+        let read = |key: &str| -> String {
+            conn.query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                [key],
+                |row| row.get(0),
+            )
+            .expect("read setting")
+        };
+        // The old default says nothing about what the user chose, so the box
+        // has to start following the drag beside the file.
+        assert_eq!(read("app.corner_box_side"), "follow");
+        // Nothing else on the page moves.
+        assert_eq!(read("app.corner_box_opacity"), "100");
+
+        // A corner picked after this build survives the next start.
+        conn.execute(
+            "UPDATE settings SET value = 'top-left' WHERE key = 'app.corner_box_side'",
+            [],
+        )
+        .unwrap();
+        conn.execute("DELETE FROM schema_migrations WHERE version >= 24", [])
+            .unwrap();
+        run_migrations(&conn).expect("rerun migration 24");
+        assert_eq!(read("app.corner_box_side"), "top-left");
     }
 
     #[test]
